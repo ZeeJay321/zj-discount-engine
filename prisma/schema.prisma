@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// ---------------------------------------------------------------------------
+// ZJ Discount Engine. No customer personal data is stored in any table below.
+// ---------------------------------------------------------------------------
+
+/// A discount rule. `config` is the desired state; `syncedConfig` is the last
+/// state Shopify accepted. They differ only while a sync is pending or failed.
+model Rule {
+  id                String    @id @default(cuid())
+  shop              String
+  title             String
+  /// RuleType from @zj/discount-core, e.g. "AMOUNT_OFF_PRODUCTS"
+  type              String
+  enabled           Boolean   @default(true)
+  priority          Int       @default(0)
+  startsAt          DateTime
+  endsAt            DateTime?
+  combinesOrder     Boolean   @default(false)
+  combinesProduct   Boolean   @default(false)
+  combinesShipping  Boolean   @default(false)
+  /// RuleConfig JSON (desired state)
+  config            Json
+  /// Incremented on every edit, including enable/disable
+  configVersion     Int       @default(1)
+  shopifyDiscountId String?
+  /// PENDING | SYNCED | FAILED | DELETING
+  syncStatus        String    @default("PENDING")
+  syncedVersion     Int?
+  /// Full desired snapshot (title, dates, enabled, combinations, config) that Shopify last accepted
+  syncedConfig      Json?
+  syncError         String?
+  syncedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  events SyncEvent[]
+
+  @@unique([shop, shopifyDiscountId])
+  @@index([shop, priority])
+  @@index([shop, syncStatus])
+}
+
+/// Audit trail of Shopify sync attempts. Holds no personal data.
+model SyncEvent {
+  id        String   @id @default(cuid())
+  ruleId    String
+  shop      String
+  /// create | update | delete | relink
+  action    String
+  ok        Boolean
+  error     String?
+  createdAt DateTime @default(now())
+
+  rule Rule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([shop, createdAt])
+  @@index([ruleId])
+}

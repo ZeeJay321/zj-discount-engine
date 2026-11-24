@@ -1,0 +1,43 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "lines": []
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 1,
+            "ruleId": "rule_1",
+            "title": "10% off Winter",
+            "collectionIds": [
+              "gid://shopify/Collection/100"
+            ],
+            "config": {
+              "type": "AMOUNT_OFF_PRODUCTS",
+              "target": {
+                "kind": "COLLECTIONS",
+                "collectionIds": [
+                  "gid://shopify/Collection/100"
+                ]
+              },
+              "value": {
+                "kind": "PERCENTAGE",
+                "percent": 10
+              }
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "operations": []
+    }
+  }
+}

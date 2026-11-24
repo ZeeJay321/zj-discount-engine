@@ -1,0 +1,7 @@
+{
+  "currencyCode": "JPY",
+  "lines": [
+    { "id": "gid://shopify/CartLine/1", "quantity": 1, "subtotalMinor": 1999, "productId": "gid://shopify/Product/1", "variantId": null, "collectionIds": ["gid://shopify/Collection/100"] },
+    { "id": "gid://shopify/CartLine/2", "quantity": 2, "subtotalMinor": 3001, "productId": "gid://shopify/Product/2", "variantId": null, "collectionIds": ["gid://shopify/Collection/100"] }
+  ]
+}

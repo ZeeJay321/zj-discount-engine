@@ -1,0 +1,28 @@
+api_version = "2026-10"
+
+[[extensions]]
+name = "t:name"
+handle = "zj-discount-function"
+type = "function"
+uid = "33ea89c5-654c-e654-93f6-76e1d08f863fb1638139"
+description = "t:description"
+
+  [[extensions.targeting]]
+  target = "cart.lines.discounts.generate.run"
+  input_query = "src/cart_lines_discounts_generate_run.graphql"
+  export = "cart-lines-discounts-generate-run"
+
+  [[extensions.targeting]]
+  target = "cart.delivery-options.discounts.generate.run"
+  input_query = "src/cart_delivery_options_discounts_generate_run.graphql"
+  export = "cart-delivery-options-discounts-generate-run"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"
+
+  # Top-level keys of the discount's $app/rule-config JSON metafield become input-query
+  # variables. We use `collectionIds` for inAnyCollection(ids: $collectionIds).
+  [extensions.input.variables]
+  namespace = "$app"
+  key = "rule-config"

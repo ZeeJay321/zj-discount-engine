@@ -1,0 +1,8 @@
+{
+  "currencyCode": "USD",
+  "lines": [
+    { "id": "gid://shopify/CartLine/1", "quantity": 2, "subtotalMinor": 2000, "productId": "gid://shopify/Product/1", "variantId": "gid://shopify/ProductVariant/11", "collectionIds": ["gid://shopify/Collection/100"] },
+    { "id": "gid://shopify/CartLine/2", "quantity": 1, "subtotalMinor": 999, "productId": "gid://shopify/Product/2", "variantId": "gid://shopify/ProductVariant/21", "collectionIds": ["gid://shopify/Collection/100", "gid://shopify/Collection/200"] },
+    { "id": "gid://shopify/CartLine/3", "quantity": 3, "subtotalMinor": 1500, "productId": "gid://shopify/Product/3", "variantId": "gid://shopify/ProductVariant/31", "collectionIds": [] }
+  ]
+}

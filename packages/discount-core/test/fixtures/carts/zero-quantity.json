@@ -1,0 +1,7 @@
+{
+  "currencyCode": "USD",
+  "lines": [
+    { "id": "gid://shopify/CartLine/1", "quantity": 0, "subtotalMinor": 0, "productId": "gid://shopify/Product/1", "variantId": null, "collectionIds": ["gid://shopify/Collection/100"] },
+    { "id": "gid://shopify/CartLine/2", "quantity": 1, "subtotalMinor": 1000, "productId": "gid://shopify/Product/2", "variantId": null, "collectionIds": ["gid://shopify/Collection/100"] }
+  ]
+}

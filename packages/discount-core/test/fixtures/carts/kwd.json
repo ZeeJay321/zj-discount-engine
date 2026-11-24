@@ -1,0 +1,6 @@
+{
+  "currencyCode": "KWD",
+  "lines": [
+    { "id": "gid://shopify/CartLine/1", "quantity": 1, "subtotalMinor": 12345, "productId": "gid://shopify/Product/1", "variantId": null, "collectionIds": ["gid://shopify/Collection/100"] }
+  ]
+}
