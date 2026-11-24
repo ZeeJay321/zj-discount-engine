@@ -5,3 +5,4 @@ export * from "./evaluate";
 export * from "./schema";
 export * from "./validate";
 export { evaluateAmountOffProducts, MAX_LINE_SUBTOTAL_MINOR } from "./rules/amountOffProducts";
+export { MAX_CART_LINES } from "./limits";

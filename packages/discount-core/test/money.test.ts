@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { convertMinor, currencyExponent, formatMinor, parseDecimalToMinor, roundHalfUp } from "../src";
+import * as fc from "fast-check";
+import { convertMinor, currencyExponent, decimalToMinor, formatMinor, minorToNumber, parseDecimalToMinor, roundHalfUp } from "../src";
 
 describe("currencyExponent", () => {
   it.each([
@@ -61,5 +62,48 @@ describe("convertMinor", () => {
   it("handles float-noise rates", () => expect(convertMinor(1000, "USD", "EUR", "1.1")).toBe(1100));
   it.each([0, -1, "abc", Number.NaN])("rejects rate %j", (rate) => {
     expect(() => convertMinor(100, "USD", "EUR", rate as number)).toThrow(/rate/);
+  });
+});
+
+describe("decimalToMinor (fast path) is identical to parseDecimalToMinor", () => {
+  it.each([
+    ["6.0", 2], ["12.34", 2], ["12.345", 2], ["0.005", 2], ["100", 0], ["99.5", 0], ["1.2345", 3],
+    ["-1.50", 2], ["  7.1 ", 2], ["0", 2], ["99.99", 2], ["1999", 0], ["12.345", 3], ["9999999.99", 2],
+  ])("%s (exp %i)", (input, exp) => {
+    expect(decimalToMinor(input, exp)).toBe(parseDecimalToMinor(input, exp));
+  });
+
+  it.each(["abc", "1e3", "0x10", "0b1", "0o7", ".5", "1.", "", "1_000", "1-2", "Infinity", "1.2.3"])(
+    "rejects %j like the strict parser",
+    (bad) => expect(() => decimalToMinor(bad, 2)).toThrow(),
+  );
+
+  it("accepts numbers and falls back for out-of-range values", () => {
+    expect(decimalToMinor(12.5, 2)).toBe(1250);
+    expect(decimalToMinor(-0.001, 2)).toBe(0);
+    expect(() => decimalToMinor("99999999999999999999", 2)).toThrow(/out of range/);
+  });
+
+  it("property: identical for every well-formed decimal at currency precision", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 1e12 }), fc.constantFrom(0, 2, 3), fc.boolean(), (minor, exp, neg) => {
+        const s = (neg && minor ? "-" : "") + formatMinor(minor, exp);
+        expect(decimalToMinor(s, exp)).toBe(parseDecimalToMinor(s, exp));
+      }),
+    );
+  });
+});
+
+describe("minorToNumber", () => {
+  it.each([[1235, 2, 12.35], [750, 0, 750], [1235, 3, 1.235], [5, 2, 0.05], [0, 2, 0], [99899001, 2, 998990.01]])(
+    "%i (exp %i) → %d", (minor, exp, out) => expect(minorToNumber(minor, exp)).toBe(out),
+  );
+  it("prints exactly the decimal (JSON round-trip)", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 1e13 }), fc.constantFrom(0, 2, 3), (minor, exp) => {
+        expect(String(minorToNumber(minor, exp))).toBe(String(Number(formatMinor(minor, exp))));
+        expect(parseDecimalToMinor(String(minorToNumber(minor, exp)), exp)).toBe(minor);
+      }),
+    );
   });
 });

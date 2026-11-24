@@ -1,4 +1,4 @@
-import fc from "fast-check";
+import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { allocatePercent, allocateProportional } from "../src";
 
@@ -74,5 +74,20 @@ describe("allocateProportional", () => {
 
   it("still sums to total when total exceeds the weights (uncapped)", () => {
     expect(sum(allocateProportional(1000, [1, 2]))).toBe(1000);
+  });
+});
+
+describe("distribute (internal)", () => {
+  it("falls back when the fast path would break a cap", async () => {
+    const { distribute } = await import("../src/allocate");
+    expect(distribute([5, 0], [0.9, 0.1], 1, [5, 10])).toEqual([5, 1]);
+  });
+  it("handles more extra units than lines (uncapped)", async () => {
+    const { distribute } = await import("../src/allocate");
+    expect(distribute([0, 0], [0.5, 0.5], 5)).toEqual([3, 2]);
+  });
+  it("stops when every line is at its cap", async () => {
+    const { distribute } = await import("../src/allocate");
+    expect(distribute([1, 1], [0.5, 0.5], 3, [1, 1])).toEqual([1, 1]);
   });
 });

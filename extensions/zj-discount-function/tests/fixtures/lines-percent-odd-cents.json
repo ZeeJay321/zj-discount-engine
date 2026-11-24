@@ -5,21 +5,22 @@
     "input": {
       "presentmentCurrencyRate": "1.0",
       "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "currencyCode": "USD"
+          }
+        },
         "lines": [
           {
             "id": "gid://shopify/CartLine/1",
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "3.33",
-                "currencyCode": "USD"
+                "amount": "3.33"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/1",
               "product": {
-                "id": "gid://shopify/Product/1",
                 "inAnyCollection": true
               }
             }
@@ -29,15 +30,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "3.33",
-                "currencyCode": "USD"
+                "amount": "3.33"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/2",
               "product": {
-                "id": "gid://shopify/Product/2",
                 "inAnyCollection": true
               }
             }
@@ -47,15 +44,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "3.34",
-                "currencyCode": "USD"
+                "amount": "3.34"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/3",
               "product": {
-                "id": "gid://shopify/Product/3",
                 "inAnyCollection": true
               }
             }
@@ -97,7 +90,6 @@
           "productDiscountsAdd": {
             "candidates": [
               {
-                "message": "10% off Winter",
                 "targets": [
                   {
                     "cartLine": {
@@ -107,12 +99,11 @@
                 ],
                 "value": {
                   "fixedAmount": {
-                    "amount": "0.33"
+                    "amount": 0.33
                   }
                 }
               },
               {
-                "message": "10% off Winter",
                 "targets": [
                   {
                     "cartLine": {
@@ -122,12 +113,11 @@
                 ],
                 "value": {
                   "fixedAmount": {
-                    "amount": "0.33"
+                    "amount": 0.33
                   }
                 }
               },
               {
-                "message": "10% off Winter",
                 "targets": [
                   {
                     "cartLine": {
@@ -137,7 +127,7 @@
                 ],
                 "value": {
                   "fixedAmount": {
-                    "amount": "0.34"
+                    "amount": 0.34
                   }
                 }
               }

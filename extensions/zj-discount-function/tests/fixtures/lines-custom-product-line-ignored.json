@@ -5,34 +5,32 @@
     "input": {
       "presentmentCurrencyRate": "1.0",
       "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "currencyCode": "USD"
+          }
+        },
         "lines": [
           {
             "id": "gid://shopify/CartLine/9",
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "50.0",
-                "currencyCode": "USD"
+                "amount": "50.0"
               }
             },
-            "merchandise": {
-              "__typename": "CustomProduct"
-            }
+            "merchandise": {}
           },
           {
             "id": "gid://shopify/CartLine/1",
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "10.0",
-                "currencyCode": "USD"
+                "amount": "10.0"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/1",
               "product": {
-                "id": "gid://shopify/Product/1",
                 "inAnyCollection": true
               }
             }
@@ -74,7 +72,6 @@
           "productDiscountsAdd": {
             "candidates": [
               {
-                "message": "10% off Winter",
                 "targets": [
                   {
                     "cartLine": {
@@ -84,7 +81,7 @@
                 ],
                 "value": {
                   "fixedAmount": {
-                    "amount": "1.00"
+                    "amount": 1
                   }
                 }
               }

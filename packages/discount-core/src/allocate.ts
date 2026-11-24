@@ -14,16 +14,15 @@
 export function allocatePercent(subtotals: readonly number[], basisPoints: number): number[] {
   const quotients: number[] = [];
   const remainders: number[] = [];
-  let sumQ = 0;
   let sumR = 0;
-  for (const s of subtotals) {
+  for (let i = 0; i < subtotals.length; i++) {
+    const s = subtotals[i];
     // s * bp stays < 2^53 for s < ~9e11 minor units per line; guarded by callers.
     const product = s * basisPoints;
     const q = Math.floor(product / 10000);
     const r = product - q * 10000;
     quotients.push(q);
     remainders.push(r);
-    sumQ += q;
     sumR += r;
   }
   // Round the total half-up: extra = round(sumR / 10000).
@@ -41,7 +40,8 @@ export function allocateProportional(total: number, weights: readonly number[]):
   const quotients: number[] = [];
   const remainders: number[] = [];
   let sumQ = 0;
-  for (const w of weights) {
+  for (let i = 0; i < weights.length; i++) {
+    const w = weights[i];
     const exact = (total * w) / sumW;
     const q = Math.floor(exact);
     quotients.push(q);
@@ -52,17 +52,44 @@ export function allocateProportional(total: number, weights: readonly number[]):
   return distribute(quotients, remainders, total - sumQ, caps);
 }
 
-function distribute(
+/** @internal exported for tests only */
+export function distribute(
   quotients: number[],
   remainders: number[],
   extra: number,
   caps?: readonly number[],
 ): number[] {
-  const out = quotients.slice();
-  if (extra <= 0) return out;
-  const order = remainders
-    .map((r, i) => i)
-    .sort((a, b) => remainders[b] - remainders[a] || a - b);
+  const out = quotients;
+  const n = out.length;
+  if (extra <= 0 || n === 0) return out;
+
+  // Fast path (the normal case): give one extra unit to the `extra` largest remainders,
+  // ties to the earlier index. Find the threshold with a *native* numeric sort (no JS
+  // comparator calls, which are very expensive inside the Function's interpreter),
+  // then assign in index order. Same result as sorting indices by (remainder desc, index asc).
+  if (extra <= n) {
+    const sorted = Float64Array.from(remainders).sort();
+    const threshold = sorted[n - extra];
+    let need = extra;
+    for (let i = 0; i < n; i++) if (remainders[i] > threshold) need--;
+    const before = caps ? out.slice() : undefined;
+    let capViolated = false;
+    for (let i = 0; i < n; i++) {
+      const r = remainders[i];
+      if (r > threshold || (r === threshold && need-- > 0)) {
+        out[i] += 1;
+        if (caps && out[i] > caps[i]) capViolated = true;
+      }
+    }
+    if (!capViolated) return out;
+    for (let i = 0; i < n; i++) out[i] = (before as number[])[i];
+  }
+  return distributeSlow(out, remainders, extra, caps);
+}
+
+/** General path: more extra units than lines, or a cap got in the way. */
+function distributeSlow(out: number[], remainders: number[], extra: number, caps?: readonly number[]): number[] {
+  const order = remainders.map((_, i) => i).sort((a, b) => remainders[b] - remainders[a] || a - b);
   let left = extra;
   // Normally one pass suffices; loop guards the capped case.
   while (left > 0) {

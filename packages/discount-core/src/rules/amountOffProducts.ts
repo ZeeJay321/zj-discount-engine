@@ -25,8 +25,10 @@ function isUsableLine(line: CartLine): boolean {
 
 function matchesTarget(line: CartLine, config: AmountOffProductsConfig): boolean {
   const wanted = config.target.collectionIds;
-  for (const id of line.collectionIds) {
-    if (wanted.includes(id)) return true;
+  const ids = line.collectionIds;
+  // Index loops, not for…of: iterators are expensive in the Function's interpreter.
+  for (let i = 0; i < ids.length; i++) {
+    if (wanted.includes(ids[i])) return true;
   }
   return false;
 }
@@ -37,8 +39,17 @@ export function evaluateAmountOffProducts(
   ctx: EvaluateContext,
 ): RuleResult {
   const { config } = rule;
-  const eligible = cart.lines.filter((l) => isUsableLine(l) && matchesTarget(l, config));
-  const subtotals = eligible.map((l) => l.subtotalMinor);
+  const eligible: CartLine[] = [];
+  const subtotals: number[] = [];
+  let eligibleSum = 0;
+  for (let i = 0; i < cart.lines.length; i++) {
+    const l = cart.lines[i];
+    if (isUsableLine(l) && matchesTarget(l, config)) {
+      eligible.push(l);
+      subtotals.push(l.subtotalMinor);
+      eligibleSum += l.subtotalMinor;
+    }
+  }
 
   let amounts: number[];
   const value = config.value;
@@ -53,22 +64,24 @@ export function evaluateAmountOffProducts(
       ctx.presentmentCurrencyRate,
     );
     if (value.appliesToEachItem) {
-      amounts = eligible.map((l) => Math.min(perUnit * l.quantity, l.subtotalMinor));
+      amounts = new Array(eligible.length);
+      for (let i = 0; i < eligible.length; i++) {
+        amounts[i] = Math.min(perUnit * eligible[i].quantity, eligible[i].subtotalMinor);
+      }
     } else {
-      const sum = subtotals.reduce((a, b) => a + b, 0);
-      amounts = allocateProportional(Math.min(perUnit, sum), subtotals);
+      amounts = allocateProportional(Math.min(perUnit, eligibleSum), subtotals);
     }
   }
 
   const lines: LineDiscount[] = [];
   let totalMinor = 0;
-  eligible.forEach((l, i) => {
+  for (let i = 0; i < eligible.length; i++) {
     const amountMinor = amounts[i];
     if (amountMinor > 0) {
-      lines.push({ lineId: l.id, amountMinor });
+      lines.push({ lineId: eligible[i].id, amountMinor });
       totalMinor += amountMinor;
     }
-  });
+  }
 
   return {
     ruleId: rule.ruleId,

@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # No secrets needed: the Function builds and runs locally without a Shopify login.
+      CI: "true"
+      DATABASE_URL: "file:dev.sqlite"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Shopify CLI (builds and runs the Function)
+        run: npm install -g @shopify/cli@4.9.4
+
+      - name: Prisma generate and validate
+        run: |
+          npx prisma generate
+          npx prisma validate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests (core with coverage gate, app, function fixtures + parity)
+        run: npm test
+
+      - name: Function instruction-count gate (cap fixtures must stay <= 55% of the limit)
+        run: |
+          npm run build --workspace zj-discount-function
+          node scripts/function-perf.mjs --gate 55
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

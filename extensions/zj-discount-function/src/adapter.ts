@@ -2,73 +2,71 @@
  * Thin translation layer between Shopify's Function input/output and the pure
  * @zj/discount-core types. All discount maths lives in core; this file only maps
  * shapes (Decimal strings ⇄ integer minor units, GraphQL lines ⇄ core lines).
+ * Kept allocation-light: it runs once per cart line inside the instruction budget.
  */
 import {
   currencyExponent,
-  formatMinor,
-  parseDecimalToMinor,
+  decimalToMinor,
+  minorToNumber,
   type Cart,
   type CartLine,
-  type RuleMetafieldPayload,
   type RuleResult,
 } from "@zj/discount-core";
 
-/** Minimal structural view of the cart-lines input (matches the generated CartInput). */
+/** Structural view of the cart-lines input (matches the generated CartInput). */
 export interface LinesInputLike {
   presentmentCurrencyRate: string | number;
   cart: {
+    cost: { subtotalAmount: { currencyCode: string } };
     lines: ReadonlyArray<{
       id: string;
       quantity: number;
-      cost: { subtotalAmount: { amount: string | number; currencyCode: string } };
-      merchandise:
-        | { __typename: "ProductVariant"; id: string; product: { id: string; inAnyCollection: boolean } }
-        | { __typename: string };
+      cost: { subtotalAmount: { amount: string | number } };
+      merchandise: { product?: { inAnyCollection: boolean } };
     }>;
   };
 }
 
-export function toCoreCart(input: LinesInputLike, payload: RuleMetafieldPayload): Cart {
-  const lines = input.cart.lines;
-  const currencyCode = lines.length > 0 ? lines[0].cost.subtotalAmount.currencyCode : "USD";
+export function toCoreCart(input: LinesInputLike, collectionIds: readonly string[]): Cart {
+  const currencyCode = input.cart.cost.subtotalAmount.currencyCode;
   const exp = currencyExponent(currencyCode);
-  const out: CartLine[] = [];
-  for (const line of lines) {
-    const m = line.merchandise;
-    const isVariant = m.__typename === "ProductVariant" && "product" in m;
+  const src = input.cart.lines;
+  const lines: CartLine[] = [];
+  for (let i = 0; i < src.length; i++) {
+    const line = src[i];
+    // inAnyCollection is yes/no; "yes" means in at least one of the rule's collections.
+    // Lines outside the collections can never be discounted by this rule type, so they
+    // are dropped before the (comparatively costly) amount parsing. Core would filter
+    // them out anyway, so the result is identical.
+    const product = line.merchandise.product;
+    if (product === undefined || !product.inAnyCollection) continue;
     let subtotalMinor: number;
     try {
-      subtotalMinor = parseDecimalToMinor(line.cost.subtotalAmount.amount, exp);
+      subtotalMinor = decimalToMinor(line.cost.subtotalAmount.amount, exp);
     } catch {
-      continue; // unparseable amount: skip the line rather than fail the whole checkout
+      continue; // unparseable amount: skip the line rather than fail the checkout
     }
-    out.push({
-      id: line.id,
-      quantity: line.quantity,
-      subtotalMinor,
-      productId: isVariant ? m.product.id : "",
-      variantId: isVariant ? m.id : null,
-      // inAnyCollection only says yes/no; "yes" means in at least one of the rule's collections.
-      collectionIds: isVariant && m.product.inAnyCollection ? payload.collectionIds : [],
-    });
+    lines.push({ id: line.id, quantity: line.quantity, subtotalMinor, collectionIds });
   }
-  return { currencyCode, lines: out };
+  return { currencyCode, lines };
 }
 
-/** Product-class operations: one fixed-amount candidate per discounted line, exact to the minor unit. */
+/**
+ * Product-class operations: one fixed-amount candidate per discounted line, exact to
+ * the minor unit. Amounts are JSON numbers (cheaper than building Decimal strings). No per-candidate message, so Shopify shows the discount's title
+ * (which the app sets to the rule title).
+ */
 export function toProductOperations(result: RuleResult) {
-  if (result.lines.length === 0) return [];
+  const n = result.lines.length;
+  if (n === 0) return [];
   const exp = currencyExponent(result.currencyCode);
-  return [
-    {
-      productDiscountsAdd: {
-        candidates: result.lines.map((l) => ({
-          message: result.message,
-          targets: [{ cartLine: { id: l.lineId } }],
-          value: { fixedAmount: { amount: formatMinor(l.amountMinor, exp) } },
-        })),
-        selectionStrategy: "ALL" as const,
-      },
-    },
-  ];
+  const candidates = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const l = result.lines[i];
+    candidates[i] = {
+      targets: [{ cartLine: { id: l.lineId } }],
+      value: { fixedAmount: { amount: minorToNumber(l.amountMinor, exp) } },
+    };
+  }
+  return [{ productDiscountsAdd: { candidates, selectionStrategy: "ALL" as const } }];
 }

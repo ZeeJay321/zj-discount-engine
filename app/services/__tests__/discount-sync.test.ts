@@ -1,0 +1,416 @@
+import { describe, expect, it } from "vitest";
+import type { RuleDraft } from "@zj/discount-core";
+import {
+  deleteRule,
+  reconcile,
+  retrySync,
+  revertToSynced,
+  saveRule,
+  setEnabled,
+  shopifyWindow,
+  STALE_AFTER_MS,
+  toDiscountInput,
+  type SyncDeps,
+} from "../discount-sync.server";
+import { appDiscounts, C1, count, created, fakeGql, memoryRepo, pct10, SHOP, updated, userError } from "./fakes";
+
+const NOW = new Date("2026-12-01T12:00:00.000Z");
+
+function draft(o: Partial<RuleDraft> = {}): RuleDraft {
+  return {
+    title: "10% off Winter",
+    enabled: true,
+    priority: 1,
+    startsAt: "2026-11-30T00:00:00.000Z",
+    endsAt: null,
+    combinesWith: { orderDiscounts: false, productDiscounts: false, shippingDiscounts: true },
+    config: pct10,
+    ...o,
+  };
+}
+
+function setup(handlers: Parameters<typeof fakeGql>[0], clock = () => NOW) {
+  const mem = memoryRepo(clock);
+  const fake = fakeGql({ ZjActiveAutomaticDiscounts: count(3), ...handlers });
+  const deps: SyncDeps = { repo: mem.repo, gql: fake.gql, shop: SHOP, now: clock };
+  return { ...mem, ...fake, deps };
+}
+
+describe("toDiscountInput", () => {
+  it("sends discount fields and the rule-config metafield in ONE input", () => {
+    const input = toDiscountInput("rule_1", { ...draft() }, NOW);
+    expect(input).toMatchObject({
+      title: "10% off Winter",
+      functionHandle: "zj-discount-function",
+      discountClasses: ["PRODUCT"],
+      combinesWith: { orderDiscounts: false, productDiscounts: false, shippingDiscounts: true },
+      startsAt: "2026-11-30T00:00:00.000Z",
+      endsAt: null,
+    });
+    expect(input.metafields).toHaveLength(1);
+    const mf = input.metafields[0];
+    expect(mf).toMatchObject({ namespace: "$app", key: "rule-config", type: "json" });
+    expect(JSON.parse(mf.value)).toEqual({
+      schemaVersion: 1,
+      ruleId: "rule_1",
+      title: "10% off Winter",
+      collectionIds: [C1],
+      config: pct10,
+    });
+  });
+});
+
+describe("shopifyWindow", () => {
+  it("enabled: the rule's real dates", () => {
+    expect(shopifyWindow({ ...draft(), endsAt: "2027-01-01T00:00:00.000Z" }, NOW)).toEqual({
+      startsAt: "2026-11-30T00:00:00.000Z",
+      endsAt: "2027-01-01T00:00:00.000Z",
+    });
+  });
+  it("disabled: already ended now, start kept before the end", () => {
+    expect(shopifyWindow({ ...draft(), enabled: false }, NOW)).toEqual({
+      startsAt: "2026-11-30T00:00:00.000Z",
+      endsAt: NOW.toISOString(),
+    });
+  });
+  it("disabled with a future start: start moved just before now so end > start", () => {
+    const w = shopifyWindow({ ...draft(), enabled: false, startsAt: "2027-02-01T00:00:00.000Z" }, NOW);
+    expect(w.endsAt).toBe(NOW.toISOString());
+    expect(Date.parse(w.startsAt)).toBe(NOW.getTime() - 60_000);
+  });
+});
+
+describe("saveRule", () => {
+  it("creates: row PENDING → one create mutation → SYNCED with syncedConfig", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    const res = await saveRule(t.deps, draft());
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(t.ops()).toEqual(["ZjActiveAutomaticDiscounts", "ZjCreateRuleDiscount"]);
+    expect(res.rule).toMatchObject({
+      syncStatus: "SYNCED",
+      shopifyDiscountId: "gid://shopify/DiscountAutomaticNode/1",
+      syncedVersion: 1,
+      syncError: null,
+    });
+    expect(res.rule.syncedConfig).toMatchObject({ title: "10% off Winter", config: pct10 });
+    expect(t.events).toEqual([{ ruleId: res.rule.id, shop: SHOP, action: "create", ok: true }]);
+  });
+
+  it("rejects invalid drafts before touching the DB or Shopify", async () => {
+    const t = setup({});
+    const res = await saveRule(t.deps, draft({ config: { ...pct10, value: { kind: "PERCENTAGE", percent: 150 } } }));
+    expect(res.ok).toBe(false);
+    expect(t.calls).toHaveLength(0);
+    expect(t.rows.size).toBe(0);
+  });
+
+  it("rejects an overlapping rule with the same priority (server-side check)", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    await saveRule(t.deps, draft({ title: "First" }));
+    const res = await saveRule(t.deps, draft({ title: "Second" }));
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.errors[0].message).toContain("First");
+  });
+
+  it("blocks a new enabled rule when the store has 25 automatic discounts", async () => {
+    const t = setup({ ZjActiveAutomaticDiscounts: count(25) });
+    const res = await saveRule(t.deps, draft());
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.errors[0]).toMatchObject({ field: "enabled" });
+    expect(res.errors[0].message).toContain("25 of 25");
+    expect(t.rows.size).toBe(0);
+  });
+
+  it("blocks when the quota can't be checked (fails closed)", async () => {
+    const t = setup({ ZjActiveAutomaticDiscounts: () => { throw new Error("timeout"); } });
+    const res = await saveRule(t.deps, draft());
+    expect(res.ok).toBe(false);
+  });
+
+  it("Shopify userErrors: rule kept as FAILED with the message; nothing marked synced", async () => {
+    const t = setup({ ZjCreateRuleDiscount: userError("discountAutomaticAppCreate", "Title is too long") });
+    const res = await saveRule(t.deps, draft());
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.rule).toMatchObject({
+      syncStatus: "FAILED",
+      syncError: "automaticAppDiscount.title: Title is too long",
+      shopifyDiscountId: null,
+      syncedVersion: null,
+      syncedConfig: null,
+    });
+    expect(t.events[0]).toMatchObject({ action: "create", ok: false });
+  });
+
+  it("network failure: FAILED with the error", async () => {
+    const t = setup({ ZjCreateRuleDiscount: () => { throw new Error("socket hang up"); } });
+    const res = await saveRule(t.deps, draft());
+    expect(res.ok && res.rule.syncStatus).toBe("FAILED");
+    expect(res.ok && res.rule.syncError).toBe("socket hang up");
+  });
+
+  it("edit: bumps configVersion and updates (no quota check for an already enabled rule)", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: updated() });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    const res = await saveRule(t.deps, draft({ id: first.rule.id, title: "12% off Winter", config: { ...pct10, value: { kind: "PERCENTAGE", percent: 12 } } }));
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(t.ops()).toEqual(["ZjActiveAutomaticDiscounts", "ZjCreateRuleDiscount", "ZjUpdateRuleDiscount"]);
+    expect(res.rule).toMatchObject({ configVersion: 2, syncedVersion: 2, syncStatus: "SYNCED", title: "12% off Winter" });
+    const sent = t.calls[2].variables as { id: string; automaticAppDiscount: { metafields: Array<{ value: string }> } };
+    expect(sent.id).toBe("gid://shopify/DiscountAutomaticNode/1");
+    expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value).config.value.percent).toBe(12);
+  });
+
+  it("failed edit keeps the previous synced state, so the UI can revert", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: userError("discountAutomaticAppUpdate", "nope") });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    const res = await saveRule(t.deps, draft({ id: first.rule.id, title: "Changed" }));
+    if (!res.ok) throw new Error("expected saved locally");
+    expect(res.rule).toMatchObject({ syncStatus: "FAILED", title: "Changed", configVersion: 2, syncedVersion: 1 });
+    expect(res.rule.syncedConfig?.title).toBe("10% off Winter");
+    expect(res.rule.shopifyDiscountId).toBe("gid://shopify/DiscountAutomaticNode/1");
+  });
+
+  it("rejects editing an unknown rule", async () => {
+    const t = setup({});
+    expect((await saveRule(t.deps, draft({ id: "nope" }))).ok).toBe(false);
+  });
+});
+
+describe("retry and revert", () => {
+  it("retry after a failed edit re-sends the desired state", async () => {
+    let fail = true;
+    const t = setup({
+      ZjCreateRuleDiscount: created(),
+      ZjUpdateRuleDiscount: () => (fail ? userError("discountAutomaticAppUpdate", "busy")() : updated()()),
+    });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    await saveRule(t.deps, draft({ id: first.rule.id, title: "Changed" }));
+    fail = false;
+    const r = await retrySync(t.deps, first.rule.id);
+    expect(r).toMatchObject({ syncStatus: "SYNCED", syncedVersion: 2, title: "Changed" });
+    expect(r?.syncedConfig?.title).toBe("Changed");
+  });
+
+  it("retry of a failed create first looks for an orphaned discount (no duplicate create)", async () => {
+    let createFails = true;
+    const t = setup({
+      ZjCreateRuleDiscount: () => (createFails ? (() => { throw new Error("timeout after Shopify created it"); })() : created()()),
+      ZjAppDiscounts: appDiscounts([{ id: "gid://shopify/DiscountAutomaticNode/77", ruleId: "rule_1" }]),
+      ZjUpdateRuleDiscount: updated("gid://shopify/DiscountAutomaticNode/77"),
+    });
+    const res = await saveRule(t.deps, draft());
+    if (!res.ok) throw new Error("setup");
+    expect(res.rule.syncStatus).toBe("FAILED");
+    createFails = false;
+    const r = await retrySync(t.deps, res.rule.id);
+    expect(t.ops().slice(-2)).toEqual(["ZjAppDiscounts", "ZjUpdateRuleDiscount"]);
+    expect(t.ops().filter((o) => o === "ZjCreateRuleDiscount")).toHaveLength(1);
+    expect(r).toMatchObject({ syncStatus: "SYNCED", shopifyDiscountId: "gid://shopify/DiscountAutomaticNode/77" });
+    expect(t.events.at(-1)).toMatchObject({ action: "relink", ok: true });
+  });
+
+  it("revert puts the row back to the last synced state", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: userError("discountAutomaticAppUpdate", "nope") });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    await saveRule(t.deps, draft({ id: first.rule.id, title: "Changed" }));
+    const res = await revertToSynced(t.deps, first.rule.id);
+    expect(res.ok && res.rule).toMatchObject({ title: "10% off Winter", syncStatus: "SYNCED", configVersion: 1, syncError: null });
+  });
+
+  it("revert is refused for a rule that was never synced", async () => {
+    const t = setup({ ZjCreateRuleDiscount: userError("discountAutomaticAppCreate", "x") });
+    const res = await saveRule(t.deps, draft());
+    if (!res.ok) throw new Error("setup");
+    expect((await revertToSynced(t.deps, res.rule.id)).ok).toBe(false);
+    expect((await revertToSynced(t.deps, "missing")).ok).toBe(false);
+  });
+
+  it("recreates the discount if it was deleted in Shopify admin", async () => {
+    let createN = 0;
+    const t = setup({
+      ZjCreateRuleDiscount: () => created(`gid://shopify/DiscountAutomaticNode/${++createN}`)(),
+      ZjUpdateRuleDiscount: () => ({
+        discountAutomaticAppUpdate: { automaticAppDiscount: null, userErrors: [{ field: ["id"], message: "Discount does not exist", code: null }] },
+      }),
+    });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    const res = await saveRule(t.deps, draft({ id: first.rule.id, title: "Changed" }));
+    expect(t.ops().slice(-2)).toEqual(["ZjUpdateRuleDiscount", "ZjCreateRuleDiscount"]);
+    expect(res.ok && res.rule).toMatchObject({ syncStatus: "SYNCED", shopifyDiscountId: "gid://shopify/DiscountAutomaticNode/2" });
+    expect(t.events.at(-1)).toMatchObject({ action: "create", ok: true });
+  });
+
+  it("retry of an unknown rule returns null", async () => {
+    expect(await retrySync(setup({}).deps, "missing")).toBeNull();
+  });
+});
+
+describe("enable / disable", () => {
+  it("disable sends the rule as ended now through the same update mutation", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: updated() });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    const res = await setEnabled(t.deps, first.rule.id, false);
+    expect(res.ok && res.rule).toMatchObject({ enabled: false, syncStatus: "SYNCED", configVersion: 2 });
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: { endsAt: string } };
+    expect(sent.automaticAppDiscount.endsAt).toBe(NOW.toISOString());
+  });
+
+  it("enable checks the quota and sends the real dates again", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: updated() });
+    const first = await saveRule(t.deps, draft({ endsAt: "2027-01-01T00:00:00.000Z" }));
+    if (!first.ok) throw new Error("setup");
+    await setEnabled(t.deps, first.rule.id, false);
+    const res = await setEnabled(t.deps, first.rule.id, true);
+    expect(res.ok && res.rule.enabled).toBe(true);
+    expect(t.ops().filter((o) => o === "ZjActiveAutomaticDiscounts")).toHaveLength(2);
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: { endsAt: string } };
+    expect(sent.automaticAppDiscount.endsAt).toBe("2027-01-01T00:00:00.000Z");
+  });
+
+  it("enable is blocked at 25 automatic discounts", async () => {
+    let n = 3;
+    const t = setup({ ZjActiveAutomaticDiscounts: () => count(n)(), ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: updated() });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    await setEnabled(t.deps, first.rule.id, false);
+    n = 25;
+    const res = await setEnabled(t.deps, first.rule.id, true);
+    expect(res.ok).toBe(false);
+    expect((await t.repo.get(SHOP, first.rule.id))?.enabled).toBe(false);
+  });
+
+  it("enable re-checks same-priority overlap", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: updated() });
+    const a = await saveRule(t.deps, draft({ title: "A" }));
+    if (!a.ok) throw new Error("setup");
+    await setEnabled(t.deps, a.rule.id, false);
+    await saveRule(t.deps, draft({ title: "B" }));
+    const res = await setEnabled(t.deps, a.rule.id, true);
+    expect(res.ok).toBe(false);
+  });
+
+  it("no-op when already in the requested state; error for unknown rule", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    const before = t.calls.length;
+    expect((await setEnabled(t.deps, first.rule.id, true)).ok).toBe(true);
+    expect(t.calls.length).toBe(before);
+    expect((await setEnabled(t.deps, "missing", true)).ok).toBe(false);
+  });
+});
+
+describe("delete", () => {
+  const del = (errs: Array<{ message: string; code?: string }> = []) => () => ({
+    discountAutomaticDelete: { deletedAutomaticDiscountId: errs.length ? null : "x", userErrors: errs },
+  });
+
+  it("deletes the Shopify discount, then the row", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjDeleteRuleDiscount: del() });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    expect(await deleteRule(t.deps, first.rule.id)).toEqual({ ok: true });
+    expect(t.rows.size).toBe(0);
+    expect(t.calls.at(-1)!.variables).toEqual({ id: "gid://shopify/DiscountAutomaticNode/1" });
+  });
+
+  it("a discount that's already gone counts as deleted", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjDeleteRuleDiscount: del([{ message: "Discount does not exist" }]) });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    expect((await deleteRule(t.deps, first.rule.id)).ok).toBe(true);
+    expect(t.rows.size).toBe(0);
+  });
+
+  it("keeps the row as DELETING with the error when Shopify refuses", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjDeleteRuleDiscount: del([{ message: "Internal error" }]) });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    const res = await deleteRule(t.deps, first.rule.id);
+    expect(res.ok).toBe(false);
+    expect(await t.repo.get(SHOP, first.rule.id)).toMatchObject({ syncStatus: "DELETING", syncError: "Internal error" });
+  });
+
+  it("keeps the row on a network error", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjDeleteRuleDiscount: () => { throw new Error("offline"); } });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    expect((await deleteRule(t.deps, first.rule.id)).ok).toBe(false);
+    expect(t.rows.size).toBe(1);
+  });
+
+  it("deleting a never-synced rule also removes an orphaned discount found by ruleId", async () => {
+    const t = setup({
+      ZjCreateRuleDiscount: userError("discountAutomaticAppCreate", "x"),
+      ZjAppDiscounts: appDiscounts([{ id: "gid://shopify/DiscountAutomaticNode/9", ruleId: "rule_1" }]),
+      ZjDeleteRuleDiscount: del(),
+    });
+    const res = await saveRule(t.deps, draft());
+    if (!res.ok) throw new Error("setup");
+    expect((await deleteRule(t.deps, res.rule.id)).ok).toBe(true);
+    expect(t.calls.at(-1)!.variables).toEqual({ id: "gid://shopify/DiscountAutomaticNode/9" });
+  });
+
+  it("deleting an unknown rule is a no-op", async () => {
+    expect(await deleteRule(setup({}).deps, "missing")).toEqual({ ok: true });
+  });
+});
+
+describe("reconcile", () => {
+  it("retries PENDING rows older than the stale window, relinking an orphan", async () => {
+    let now = NOW;
+    const clock = () => now;
+    const t = setup(
+      {
+        ZjAppDiscounts: appDiscounts([{ id: "gid://shopify/DiscountAutomaticNode/5", ruleId: "rule_1" }]),
+        ZjUpdateRuleDiscount: updated("gid://shopify/DiscountAutomaticNode/5"),
+      },
+      clock,
+    );
+    // Simulate a crash after the row was written PENDING but before Shopify's answer was stored.
+    await t.repo.create(SHOP, { ...draft() });
+    expect(await reconcile(t.deps)).toBe(0); // not stale yet
+    now = new Date(NOW.getTime() + STALE_AFTER_MS + 1000);
+    expect(await reconcile(t.deps)).toBe(1);
+    expect(await t.repo.get(SHOP, "rule_1")).toMatchObject({
+      syncStatus: "SYNCED",
+      shopifyDiscountId: "gid://shopify/DiscountAutomaticNode/5",
+    });
+  });
+
+  it("finishes stale deletes", async () => {
+    let now = NOW;
+    const t = setup(
+      {
+        ZjCreateRuleDiscount: created(),
+        ZjDeleteRuleDiscount: () => ({ discountAutomaticDelete: { deletedAutomaticDiscountId: "x", userErrors: [] } }),
+      },
+      () => now,
+    );
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    await t.repo.update(SHOP, first.rule.id, { syncStatus: "DELETING" });
+    now = new Date(NOW.getTime() + STALE_AFTER_MS + 1000);
+    expect(await reconcile(t.deps)).toBe(1);
+    expect(t.rows.size).toBe(0);
+  });
+
+  it("handles at most maxRules per call", async () => {
+    let now = NOW;
+    const t = setup({ ZjAppDiscounts: appDiscounts([]), ZjCreateRuleDiscount: created() }, () => now);
+    for (let i = 0; i < 3; i++) await t.repo.create(SHOP, { ...draft(), priority: i });
+    now = new Date(NOW.getTime() + STALE_AFTER_MS + 1000);
+    expect(await reconcile(t.deps, 2)).toBe(2);
+  });
+});

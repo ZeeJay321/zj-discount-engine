@@ -5,21 +5,22 @@
     "input": {
       "presentmentCurrencyRate": "1.0",
       "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "currencyCode": "USD"
+          }
+        },
         "lines": [
           {
             "id": "gid://shopify/CartLine/0",
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/0",
               "product": {
-                "id": "gid://shopify/Product/0",
                 "inAnyCollection": true
               }
             }
@@ -29,15 +30,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/1",
               "product": {
-                "id": "gid://shopify/Product/1",
                 "inAnyCollection": false
               }
             }
@@ -47,15 +44,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/2",
               "product": {
-                "id": "gid://shopify/Product/2",
                 "inAnyCollection": true
               }
             }
@@ -65,15 +58,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/3",
               "product": {
-                "id": "gid://shopify/Product/3",
                 "inAnyCollection": false
               }
             }
@@ -83,15 +72,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/4",
               "product": {
-                "id": "gid://shopify/Product/4",
                 "inAnyCollection": true
               }
             }
@@ -101,15 +86,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/5",
               "product": {
-                "id": "gid://shopify/Product/5",
                 "inAnyCollection": false
               }
             }
@@ -119,15 +100,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/6",
               "product": {
-                "id": "gid://shopify/Product/6",
                 "inAnyCollection": true
               }
             }
@@ -137,15 +114,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/7",
               "product": {
-                "id": "gid://shopify/Product/7",
                 "inAnyCollection": false
               }
             }
@@ -155,15 +128,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/8",
               "product": {
-                "id": "gid://shopify/Product/8",
                 "inAnyCollection": true
               }
             }
@@ -173,15 +142,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/9",
               "product": {
-                "id": "gid://shopify/Product/9",
                 "inAnyCollection": false
               }
             }
@@ -191,15 +156,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/10",
               "product": {
-                "id": "gid://shopify/Product/10",
                 "inAnyCollection": true
               }
             }
@@ -209,15 +170,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/11",
               "product": {
-                "id": "gid://shopify/Product/11",
                 "inAnyCollection": false
               }
             }
@@ -227,15 +184,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/12",
               "product": {
-                "id": "gid://shopify/Product/12",
                 "inAnyCollection": true
               }
             }
@@ -245,15 +198,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/13",
               "product": {
-                "id": "gid://shopify/Product/13",
                 "inAnyCollection": false
               }
             }
@@ -263,15 +212,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/14",
               "product": {
-                "id": "gid://shopify/Product/14",
                 "inAnyCollection": true
               }
             }
@@ -281,15 +226,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/15",
               "product": {
-                "id": "gid://shopify/Product/15",
                 "inAnyCollection": false
               }
             }
@@ -299,15 +240,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/16",
               "product": {
-                "id": "gid://shopify/Product/16",
                 "inAnyCollection": true
               }
             }
@@ -317,15 +254,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/17",
               "product": {
-                "id": "gid://shopify/Product/17",
                 "inAnyCollection": false
               }
             }
@@ -335,15 +268,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/18",
               "product": {
-                "id": "gid://shopify/Product/18",
                 "inAnyCollection": true
               }
             }
@@ -353,15 +282,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/19",
               "product": {
-                "id": "gid://shopify/Product/19",
                 "inAnyCollection": false
               }
             }
@@ -371,15 +296,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/20",
               "product": {
-                "id": "gid://shopify/Product/20",
                 "inAnyCollection": true
               }
             }
@@ -389,15 +310,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/21",
               "product": {
-                "id": "gid://shopify/Product/21",
                 "inAnyCollection": false
               }
             }
@@ -407,15 +324,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/22",
               "product": {
-                "id": "gid://shopify/Product/22",
                 "inAnyCollection": true
               }
             }
@@ -425,15 +338,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/23",
               "product": {
-                "id": "gid://shopify/Product/23",
                 "inAnyCollection": false
               }
             }
@@ -443,15 +352,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/24",
               "product": {
-                "id": "gid://shopify/Product/24",
                 "inAnyCollection": true
               }
             }
@@ -461,15 +366,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/25",
               "product": {
-                "id": "gid://shopify/Product/25",
                 "inAnyCollection": false
               }
             }
@@ -479,15 +380,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/26",
               "product": {
-                "id": "gid://shopify/Product/26",
                 "inAnyCollection": true
               }
             }
@@ -497,15 +394,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/27",
               "product": {
-                "id": "gid://shopify/Product/27",
                 "inAnyCollection": false
               }
             }
@@ -515,15 +408,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/28",
               "product": {
-                "id": "gid://shopify/Product/28",
                 "inAnyCollection": true
               }
             }
@@ -533,15 +422,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/29",
               "product": {
-                "id": "gid://shopify/Product/29",
                 "inAnyCollection": false
               }
             }
@@ -551,15 +436,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/30",
               "product": {
-                "id": "gid://shopify/Product/30",
                 "inAnyCollection": true
               }
             }
@@ -569,15 +450,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/31",
               "product": {
-                "id": "gid://shopify/Product/31",
                 "inAnyCollection": false
               }
             }
@@ -587,15 +464,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/32",
               "product": {
-                "id": "gid://shopify/Product/32",
                 "inAnyCollection": true
               }
             }
@@ -605,15 +478,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/33",
               "product": {
-                "id": "gid://shopify/Product/33",
                 "inAnyCollection": false
               }
             }
@@ -623,15 +492,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/34",
               "product": {
-                "id": "gid://shopify/Product/34",
                 "inAnyCollection": true
               }
             }
@@ -641,15 +506,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/35",
               "product": {
-                "id": "gid://shopify/Product/35",
                 "inAnyCollection": false
               }
             }
@@ -659,15 +520,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/36",
               "product": {
-                "id": "gid://shopify/Product/36",
                 "inAnyCollection": true
               }
             }
@@ -677,15 +534,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/37",
               "product": {
-                "id": "gid://shopify/Product/37",
                 "inAnyCollection": false
               }
             }
@@ -695,15 +548,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/38",
               "product": {
-                "id": "gid://shopify/Product/38",
                 "inAnyCollection": true
               }
             }
@@ -713,15 +562,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/39",
               "product": {
-                "id": "gid://shopify/Product/39",
                 "inAnyCollection": false
               }
             }
@@ -731,15 +576,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/40",
               "product": {
-                "id": "gid://shopify/Product/40",
                 "inAnyCollection": true
               }
             }
@@ -749,15 +590,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/41",
               "product": {
-                "id": "gid://shopify/Product/41",
                 "inAnyCollection": false
               }
             }
@@ -767,15 +604,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/42",
               "product": {
-                "id": "gid://shopify/Product/42",
                 "inAnyCollection": true
               }
             }
@@ -785,15 +618,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/43",
               "product": {
-                "id": "gid://shopify/Product/43",
                 "inAnyCollection": false
               }
             }
@@ -803,15 +632,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/44",
               "product": {
-                "id": "gid://shopify/Product/44",
                 "inAnyCollection": true
               }
             }
@@ -821,15 +646,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/45",
               "product": {
-                "id": "gid://shopify/Product/45",
                 "inAnyCollection": false
               }
             }
@@ -839,15 +660,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/46",
               "product": {
-                "id": "gid://shopify/Product/46",
                 "inAnyCollection": true
               }
             }
@@ -857,15 +674,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/47",
               "product": {
-                "id": "gid://shopify/Product/47",
                 "inAnyCollection": false
               }
             }
@@ -875,15 +688,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/48",
               "product": {
-                "id": "gid://shopify/Product/48",
                 "inAnyCollection": true
               }
             }
@@ -893,15 +702,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/49",
               "product": {
-                "id": "gid://shopify/Product/49",
                 "inAnyCollection": false
               }
             }
@@ -911,15 +716,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/50",
               "product": {
-                "id": "gid://shopify/Product/50",
                 "inAnyCollection": true
               }
             }
@@ -929,15 +730,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/51",
               "product": {
-                "id": "gid://shopify/Product/51",
                 "inAnyCollection": false
               }
             }
@@ -947,15 +744,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/52",
               "product": {
-                "id": "gid://shopify/Product/52",
                 "inAnyCollection": true
               }
             }
@@ -965,15 +758,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/53",
               "product": {
-                "id": "gid://shopify/Product/53",
                 "inAnyCollection": false
               }
             }
@@ -983,15 +772,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/54",
               "product": {
-                "id": "gid://shopify/Product/54",
                 "inAnyCollection": true
               }
             }
@@ -1001,15 +786,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/55",
               "product": {
-                "id": "gid://shopify/Product/55",
                 "inAnyCollection": false
               }
             }
@@ -1019,15 +800,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/56",
               "product": {
-                "id": "gid://shopify/Product/56",
                 "inAnyCollection": true
               }
             }
@@ -1037,15 +814,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/57",
               "product": {
-                "id": "gid://shopify/Product/57",
                 "inAnyCollection": false
               }
             }
@@ -1055,15 +828,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/58",
               "product": {
-                "id": "gid://shopify/Product/58",
                 "inAnyCollection": true
               }
             }
@@ -1073,15 +842,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/59",
               "product": {
-                "id": "gid://shopify/Product/59",
                 "inAnyCollection": false
               }
             }
@@ -1091,15 +856,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/60",
               "product": {
-                "id": "gid://shopify/Product/60",
                 "inAnyCollection": true
               }
             }
@@ -1109,15 +870,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/61",
               "product": {
-                "id": "gid://shopify/Product/61",
                 "inAnyCollection": false
               }
             }
@@ -1127,15 +884,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/62",
               "product": {
-                "id": "gid://shopify/Product/62",
                 "inAnyCollection": true
               }
             }
@@ -1145,15 +898,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/63",
               "product": {
-                "id": "gid://shopify/Product/63",
                 "inAnyCollection": false
               }
             }
@@ -1163,15 +912,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/64",
               "product": {
-                "id": "gid://shopify/Product/64",
                 "inAnyCollection": true
               }
             }
@@ -1181,15 +926,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/65",
               "product": {
-                "id": "gid://shopify/Product/65",
                 "inAnyCollection": false
               }
             }
@@ -1199,15 +940,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/66",
               "product": {
-                "id": "gid://shopify/Product/66",
                 "inAnyCollection": true
               }
             }
@@ -1217,15 +954,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/67",
               "product": {
-                "id": "gid://shopify/Product/67",
                 "inAnyCollection": false
               }
             }
@@ -1235,15 +968,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/68",
               "product": {
-                "id": "gid://shopify/Product/68",
                 "inAnyCollection": true
               }
             }
@@ -1253,15 +982,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/69",
               "product": {
-                "id": "gid://shopify/Product/69",
                 "inAnyCollection": false
               }
             }
@@ -1271,15 +996,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/70",
               "product": {
-                "id": "gid://shopify/Product/70",
                 "inAnyCollection": true
               }
             }
@@ -1289,15 +1010,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/71",
               "product": {
-                "id": "gid://shopify/Product/71",
                 "inAnyCollection": false
               }
             }
@@ -1307,15 +1024,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/72",
               "product": {
-                "id": "gid://shopify/Product/72",
                 "inAnyCollection": true
               }
             }
@@ -1325,15 +1038,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/73",
               "product": {
-                "id": "gid://shopify/Product/73",
                 "inAnyCollection": false
               }
             }
@@ -1343,15 +1052,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/74",
               "product": {
-                "id": "gid://shopify/Product/74",
                 "inAnyCollection": true
               }
             }
@@ -1361,15 +1066,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/75",
               "product": {
-                "id": "gid://shopify/Product/75",
                 "inAnyCollection": false
               }
             }
@@ -1379,15 +1080,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/76",
               "product": {
-                "id": "gid://shopify/Product/76",
                 "inAnyCollection": true
               }
             }
@@ -1397,15 +1094,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/77",
               "product": {
-                "id": "gid://shopify/Product/77",
                 "inAnyCollection": false
               }
             }
@@ -1415,15 +1108,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/78",
               "product": {
-                "id": "gid://shopify/Product/78",
                 "inAnyCollection": true
               }
             }
@@ -1433,15 +1122,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/79",
               "product": {
-                "id": "gid://shopify/Product/79",
                 "inAnyCollection": false
               }
             }
@@ -1451,15 +1136,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/80",
               "product": {
-                "id": "gid://shopify/Product/80",
                 "inAnyCollection": true
               }
             }
@@ -1469,15 +1150,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/81",
               "product": {
-                "id": "gid://shopify/Product/81",
                 "inAnyCollection": false
               }
             }
@@ -1487,15 +1164,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/82",
               "product": {
-                "id": "gid://shopify/Product/82",
                 "inAnyCollection": true
               }
             }
@@ -1505,15 +1178,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/83",
               "product": {
-                "id": "gid://shopify/Product/83",
                 "inAnyCollection": false
               }
             }
@@ -1523,15 +1192,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/84",
               "product": {
-                "id": "gid://shopify/Product/84",
                 "inAnyCollection": true
               }
             }
@@ -1541,15 +1206,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/85",
               "product": {
-                "id": "gid://shopify/Product/85",
                 "inAnyCollection": false
               }
             }
@@ -1559,15 +1220,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/86",
               "product": {
-                "id": "gid://shopify/Product/86",
                 "inAnyCollection": true
               }
             }
@@ -1577,15 +1234,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/87",
               "product": {
-                "id": "gid://shopify/Product/87",
                 "inAnyCollection": false
               }
             }
@@ -1595,15 +1248,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/88",
               "product": {
-                "id": "gid://shopify/Product/88",
                 "inAnyCollection": true
               }
             }
@@ -1613,15 +1262,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/89",
               "product": {
-                "id": "gid://shopify/Product/89",
                 "inAnyCollection": false
               }
             }
@@ -1631,15 +1276,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/90",
               "product": {
-                "id": "gid://shopify/Product/90",
                 "inAnyCollection": true
               }
             }
@@ -1649,15 +1290,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/91",
               "product": {
-                "id": "gid://shopify/Product/91",
                 "inAnyCollection": false
               }
             }
@@ -1667,15 +1304,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/92",
               "product": {
-                "id": "gid://shopify/Product/92",
                 "inAnyCollection": true
               }
             }
@@ -1685,15 +1318,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/93",
               "product": {
-                "id": "gid://shopify/Product/93",
                 "inAnyCollection": false
               }
             }
@@ -1703,15 +1332,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/94",
               "product": {
-                "id": "gid://shopify/Product/94",
                 "inAnyCollection": true
               }
             }
@@ -1721,15 +1346,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/95",
               "product": {
-                "id": "gid://shopify/Product/95",
                 "inAnyCollection": false
               }
             }
@@ -1739,15 +1360,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/96",
               "product": {
-                "id": "gid://shopify/Product/96",
                 "inAnyCollection": true
               }
             }
@@ -1757,15 +1374,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/97",
               "product": {
-                "id": "gid://shopify/Product/97",
                 "inAnyCollection": false
               }
             }
@@ -1775,15 +1388,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/98",
               "product": {
-                "id": "gid://shopify/Product/98",
                 "inAnyCollection": true
               }
             }
@@ -1793,15 +1402,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/99",
               "product": {
-                "id": "gid://shopify/Product/99",
                 "inAnyCollection": false
               }
             }
@@ -1811,15 +1416,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/100",
               "product": {
-                "id": "gid://shopify/Product/100",
                 "inAnyCollection": true
               }
             }
@@ -1829,15 +1430,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/101",
               "product": {
-                "id": "gid://shopify/Product/101",
                 "inAnyCollection": false
               }
             }
@@ -1847,15 +1444,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/102",
               "product": {
-                "id": "gid://shopify/Product/102",
                 "inAnyCollection": true
               }
             }
@@ -1865,15 +1458,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/103",
               "product": {
-                "id": "gid://shopify/Product/103",
                 "inAnyCollection": false
               }
             }
@@ -1883,15 +1472,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/104",
               "product": {
-                "id": "gid://shopify/Product/104",
                 "inAnyCollection": true
               }
             }
@@ -1901,15 +1486,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/105",
               "product": {
-                "id": "gid://shopify/Product/105",
                 "inAnyCollection": false
               }
             }
@@ -1919,15 +1500,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/106",
               "product": {
-                "id": "gid://shopify/Product/106",
                 "inAnyCollection": true
               }
             }
@@ -1937,15 +1514,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/107",
               "product": {
-                "id": "gid://shopify/Product/107",
                 "inAnyCollection": false
               }
             }
@@ -1955,15 +1528,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/108",
               "product": {
-                "id": "gid://shopify/Product/108",
                 "inAnyCollection": true
               }
             }
@@ -1973,15 +1542,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/109",
               "product": {
-                "id": "gid://shopify/Product/109",
                 "inAnyCollection": false
               }
             }
@@ -1991,15 +1556,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/110",
               "product": {
-                "id": "gid://shopify/Product/110",
                 "inAnyCollection": true
               }
             }
@@ -2009,15 +1570,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/111",
               "product": {
-                "id": "gid://shopify/Product/111",
                 "inAnyCollection": false
               }
             }
@@ -2027,15 +1584,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/112",
               "product": {
-                "id": "gid://shopify/Product/112",
                 "inAnyCollection": true
               }
             }
@@ -2045,15 +1598,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/113",
               "product": {
-                "id": "gid://shopify/Product/113",
                 "inAnyCollection": false
               }
             }
@@ -2063,15 +1612,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/114",
               "product": {
-                "id": "gid://shopify/Product/114",
                 "inAnyCollection": true
               }
             }
@@ -2081,15 +1626,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/115",
               "product": {
-                "id": "gid://shopify/Product/115",
                 "inAnyCollection": false
               }
             }
@@ -2099,15 +1640,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/116",
               "product": {
-                "id": "gid://shopify/Product/116",
                 "inAnyCollection": true
               }
             }
@@ -2117,15 +1654,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/117",
               "product": {
-                "id": "gid://shopify/Product/117",
                 "inAnyCollection": false
               }
             }
@@ -2135,15 +1668,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/118",
               "product": {
-                "id": "gid://shopify/Product/118",
                 "inAnyCollection": true
               }
             }
@@ -2153,15 +1682,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/119",
               "product": {
-                "id": "gid://shopify/Product/119",
                 "inAnyCollection": false
               }
             }
@@ -2171,15 +1696,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/120",
               "product": {
-                "id": "gid://shopify/Product/120",
                 "inAnyCollection": true
               }
             }
@@ -2189,15 +1710,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/121",
               "product": {
-                "id": "gid://shopify/Product/121",
                 "inAnyCollection": false
               }
             }
@@ -2207,15 +1724,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/122",
               "product": {
-                "id": "gid://shopify/Product/122",
                 "inAnyCollection": true
               }
             }
@@ -2225,15 +1738,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/123",
               "product": {
-                "id": "gid://shopify/Product/123",
                 "inAnyCollection": false
               }
             }
@@ -2243,15 +1752,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/124",
               "product": {
-                "id": "gid://shopify/Product/124",
                 "inAnyCollection": true
               }
             }
@@ -2261,15 +1766,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/125",
               "product": {
-                "id": "gid://shopify/Product/125",
                 "inAnyCollection": false
               }
             }
@@ -2279,15 +1780,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/126",
               "product": {
-                "id": "gid://shopify/Product/126",
                 "inAnyCollection": true
               }
             }
@@ -2297,15 +1794,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/127",
               "product": {
-                "id": "gid://shopify/Product/127",
                 "inAnyCollection": false
               }
             }
@@ -2315,15 +1808,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/128",
               "product": {
-                "id": "gid://shopify/Product/128",
                 "inAnyCollection": true
               }
             }
@@ -2333,15 +1822,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/129",
               "product": {
-                "id": "gid://shopify/Product/129",
                 "inAnyCollection": false
               }
             }
@@ -2351,15 +1836,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/130",
               "product": {
-                "id": "gid://shopify/Product/130",
                 "inAnyCollection": true
               }
             }
@@ -2369,15 +1850,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/131",
               "product": {
-                "id": "gid://shopify/Product/131",
                 "inAnyCollection": false
               }
             }
@@ -2387,15 +1864,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/132",
               "product": {
-                "id": "gid://shopify/Product/132",
                 "inAnyCollection": true
               }
             }
@@ -2405,15 +1878,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/133",
               "product": {
-                "id": "gid://shopify/Product/133",
                 "inAnyCollection": false
               }
             }
@@ -2423,15 +1892,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/134",
               "product": {
-                "id": "gid://shopify/Product/134",
                 "inAnyCollection": true
               }
             }
@@ -2441,15 +1906,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/135",
               "product": {
-                "id": "gid://shopify/Product/135",
                 "inAnyCollection": false
               }
             }
@@ -2459,15 +1920,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/136",
               "product": {
-                "id": "gid://shopify/Product/136",
                 "inAnyCollection": true
               }
             }
@@ -2477,15 +1934,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/137",
               "product": {
-                "id": "gid://shopify/Product/137",
                 "inAnyCollection": false
               }
             }
@@ -2495,15 +1948,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/138",
               "product": {
-                "id": "gid://shopify/Product/138",
                 "inAnyCollection": true
               }
             }
@@ -2513,15 +1962,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/139",
               "product": {
-                "id": "gid://shopify/Product/139",
                 "inAnyCollection": false
               }
             }
@@ -2531,15 +1976,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/140",
               "product": {
-                "id": "gid://shopify/Product/140",
                 "inAnyCollection": true
               }
             }
@@ -2549,15 +1990,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/141",
               "product": {
-                "id": "gid://shopify/Product/141",
                 "inAnyCollection": false
               }
             }
@@ -2567,15 +2004,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/142",
               "product": {
-                "id": "gid://shopify/Product/142",
                 "inAnyCollection": true
               }
             }
@@ -2585,15 +2018,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/143",
               "product": {
-                "id": "gid://shopify/Product/143",
                 "inAnyCollection": false
               }
             }
@@ -2603,15 +2032,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/144",
               "product": {
-                "id": "gid://shopify/Product/144",
                 "inAnyCollection": true
               }
             }
@@ -2621,15 +2046,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/145",
               "product": {
-                "id": "gid://shopify/Product/145",
                 "inAnyCollection": false
               }
             }
@@ -2639,15 +2060,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/146",
               "product": {
-                "id": "gid://shopify/Product/146",
                 "inAnyCollection": true
               }
             }
@@ -2657,15 +2074,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/147",
               "product": {
-                "id": "gid://shopify/Product/147",
                 "inAnyCollection": false
               }
             }
@@ -2675,15 +2088,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/148",
               "product": {
-                "id": "gid://shopify/Product/148",
                 "inAnyCollection": true
               }
             }
@@ -2693,15 +2102,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/149",
               "product": {
-                "id": "gid://shopify/Product/149",
                 "inAnyCollection": false
               }
             }
@@ -2711,15 +2116,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/150",
               "product": {
-                "id": "gid://shopify/Product/150",
                 "inAnyCollection": true
               }
             }
@@ -2729,15 +2130,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/151",
               "product": {
-                "id": "gid://shopify/Product/151",
                 "inAnyCollection": false
               }
             }
@@ -2747,15 +2144,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/152",
               "product": {
-                "id": "gid://shopify/Product/152",
                 "inAnyCollection": true
               }
             }
@@ -2765,15 +2158,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/153",
               "product": {
-                "id": "gid://shopify/Product/153",
                 "inAnyCollection": false
               }
             }
@@ -2783,15 +2172,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/154",
               "product": {
-                "id": "gid://shopify/Product/154",
                 "inAnyCollection": true
               }
             }
@@ -2801,15 +2186,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/155",
               "product": {
-                "id": "gid://shopify/Product/155",
                 "inAnyCollection": false
               }
             }
@@ -2819,15 +2200,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/156",
               "product": {
-                "id": "gid://shopify/Product/156",
                 "inAnyCollection": true
               }
             }
@@ -2837,15 +2214,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/157",
               "product": {
-                "id": "gid://shopify/Product/157",
                 "inAnyCollection": false
               }
             }
@@ -2855,15 +2228,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/158",
               "product": {
-                "id": "gid://shopify/Product/158",
                 "inAnyCollection": true
               }
             }
@@ -2873,15 +2242,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/159",
               "product": {
-                "id": "gid://shopify/Product/159",
                 "inAnyCollection": false
               }
             }
@@ -2891,15 +2256,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/160",
               "product": {
-                "id": "gid://shopify/Product/160",
                 "inAnyCollection": true
               }
             }
@@ -2909,15 +2270,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/161",
               "product": {
-                "id": "gid://shopify/Product/161",
                 "inAnyCollection": false
               }
             }
@@ -2927,15 +2284,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/162",
               "product": {
-                "id": "gid://shopify/Product/162",
                 "inAnyCollection": true
               }
             }
@@ -2945,15 +2298,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/163",
               "product": {
-                "id": "gid://shopify/Product/163",
                 "inAnyCollection": false
               }
             }
@@ -2963,15 +2312,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/164",
               "product": {
-                "id": "gid://shopify/Product/164",
                 "inAnyCollection": true
               }
             }
@@ -2981,15 +2326,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/165",
               "product": {
-                "id": "gid://shopify/Product/165",
                 "inAnyCollection": false
               }
             }
@@ -2999,15 +2340,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/166",
               "product": {
-                "id": "gid://shopify/Product/166",
                 "inAnyCollection": true
               }
             }
@@ -3017,15 +2354,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/167",
               "product": {
-                "id": "gid://shopify/Product/167",
                 "inAnyCollection": false
               }
             }
@@ -3035,15 +2368,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/168",
               "product": {
-                "id": "gid://shopify/Product/168",
                 "inAnyCollection": true
               }
             }
@@ -3053,15 +2382,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/169",
               "product": {
-                "id": "gid://shopify/Product/169",
                 "inAnyCollection": false
               }
             }
@@ -3071,15 +2396,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/170",
               "product": {
-                "id": "gid://shopify/Product/170",
                 "inAnyCollection": true
               }
             }
@@ -3089,15 +2410,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/171",
               "product": {
-                "id": "gid://shopify/Product/171",
                 "inAnyCollection": false
               }
             }
@@ -3107,15 +2424,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/172",
               "product": {
-                "id": "gid://shopify/Product/172",
                 "inAnyCollection": true
               }
             }
@@ -3125,15 +2438,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/173",
               "product": {
-                "id": "gid://shopify/Product/173",
                 "inAnyCollection": false
               }
             }
@@ -3143,15 +2452,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/174",
               "product": {
-                "id": "gid://shopify/Product/174",
                 "inAnyCollection": true
               }
             }
@@ -3161,15 +2466,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/175",
               "product": {
-                "id": "gid://shopify/Product/175",
                 "inAnyCollection": false
               }
             }
@@ -3179,15 +2480,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/176",
               "product": {
-                "id": "gid://shopify/Product/176",
                 "inAnyCollection": true
               }
             }
@@ -3197,15 +2494,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/177",
               "product": {
-                "id": "gid://shopify/Product/177",
                 "inAnyCollection": false
               }
             }
@@ -3215,15 +2508,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/178",
               "product": {
-                "id": "gid://shopify/Product/178",
                 "inAnyCollection": true
               }
             }
@@ -3233,15 +2522,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/179",
               "product": {
-                "id": "gid://shopify/Product/179",
                 "inAnyCollection": false
               }
             }
@@ -3251,15 +2536,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/180",
               "product": {
-                "id": "gid://shopify/Product/180",
                 "inAnyCollection": true
               }
             }
@@ -3269,15 +2550,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/181",
               "product": {
-                "id": "gid://shopify/Product/181",
                 "inAnyCollection": false
               }
             }
@@ -3287,15 +2564,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/182",
               "product": {
-                "id": "gid://shopify/Product/182",
                 "inAnyCollection": true
               }
             }
@@ -3305,15 +2578,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/183",
               "product": {
-                "id": "gid://shopify/Product/183",
                 "inAnyCollection": false
               }
             }
@@ -3323,15 +2592,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/184",
               "product": {
-                "id": "gid://shopify/Product/184",
                 "inAnyCollection": true
               }
             }
@@ -3341,15 +2606,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/185",
               "product": {
-                "id": "gid://shopify/Product/185",
                 "inAnyCollection": false
               }
             }
@@ -3359,15 +2620,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/186",
               "product": {
-                "id": "gid://shopify/Product/186",
                 "inAnyCollection": true
               }
             }
@@ -3377,15 +2634,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/187",
               "product": {
-                "id": "gid://shopify/Product/187",
                 "inAnyCollection": false
               }
             }
@@ -3395,15 +2648,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/188",
               "product": {
-                "id": "gid://shopify/Product/188",
                 "inAnyCollection": true
               }
             }
@@ -3413,15 +2662,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/189",
               "product": {
-                "id": "gid://shopify/Product/189",
                 "inAnyCollection": false
               }
             }
@@ -3431,15 +2676,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/190",
               "product": {
-                "id": "gid://shopify/Product/190",
                 "inAnyCollection": true
               }
             }
@@ -3449,15 +2690,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/191",
               "product": {
-                "id": "gid://shopify/Product/191",
                 "inAnyCollection": false
               }
             }
@@ -3467,15 +2704,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/192",
               "product": {
-                "id": "gid://shopify/Product/192",
                 "inAnyCollection": true
               }
             }
@@ -3485,15 +2718,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/193",
               "product": {
-                "id": "gid://shopify/Product/193",
                 "inAnyCollection": false
               }
             }
@@ -3503,15 +2732,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/194",
               "product": {
-                "id": "gid://shopify/Product/194",
                 "inAnyCollection": true
               }
             }
@@ -3521,15 +2746,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/195",
               "product": {
-                "id": "gid://shopify/Product/195",
                 "inAnyCollection": false
               }
             }
@@ -3539,15 +2760,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/196",
               "product": {
-                "id": "gid://shopify/Product/196",
                 "inAnyCollection": true
               }
             }
@@ -3557,15 +2774,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/197",
               "product": {
-                "id": "gid://shopify/Product/197",
                 "inAnyCollection": false
               }
             }
@@ -3575,15 +2788,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/198",
               "product": {
-                "id": "gid://shopify/Product/198",
                 "inAnyCollection": true
               }
             }
@@ -3593,15 +2802,11 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "99.99",
-                "currencyCode": "USD"
+                "amount": "99.99"
               }
             },
             "merchandise": {
-              "__typename": "ProductVariant",
-              "id": "gid://shopify/ProductVariant/199",
               "product": {
-                "id": "gid://shopify/Product/199",
                 "inAnyCollection": false
               }
             }

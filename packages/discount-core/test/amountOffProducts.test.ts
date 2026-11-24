@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateRule, MAX_LINE_SUBTOTAL_MINOR } from "../src";
+import { evaluateRule, MAX_CART_LINES, MAX_LINE_SUBTOTAL_MINOR } from "../src";
 import { C100, C200, fixed, hugeCart, loadCart, pct, rule } from "./helpers";
 
 const RATE1 = { presentmentCurrencyRate: "1.0" };
@@ -118,20 +118,41 @@ describe("amount off products — fixed amount", () => {
   });
 });
 
-describe("huge carts", () => {
-  it("250 lines × 999 qty: total equals the exact rounded percentage", () => {
-    const cart = hugeCart();
+describe("huge carts and the line cap", () => {
+  it(`at the cap (${MAX_CART_LINES} lines × 999 qty): total equals the exact rounded percentage`, () => {
+    const cart = hugeCart(MAX_CART_LINES);
     const r = evaluateRule(rule(pct(25)), cart, RATE1);
     const eligible = cart.lines.filter((l) => l.collectionIds.length > 0);
     const exact = eligible.reduce((a, l) => a + BigInt(l.subtotalMinor) * 2500n, 0n);
-    expect(r.lines).toHaveLength(125);
+    expect(r.lines).toHaveLength(eligible.length);
     expect(BigInt(r.totalMinor)).toBe((exact + 5000n) / 10000n);
     expect(Number.isSafeInteger(r.totalMinor)).toBe(true);
   });
 
-  it("250 lines: fixed once-per-order splits exactly", () => {
-    const r = evaluateRule(rule(fixed(1_000_001, false)), hugeCart(), RATE1);
+  it("at the cap: fixed once-per-order splits exactly", () => {
+    const r = evaluateRule(rule(fixed(1_000_001, false)), hugeCart(MAX_CART_LINES), RATE1);
     expect(r.totalMinor).toBe(1_000_001);
+  });
+
+  it("one line above the cap: no discount at all, never partial", () => {
+    const r = evaluateRule(rule(pct(25)), hugeCart(MAX_CART_LINES + 1), RATE1);
+    expect(r.lines).toEqual([]);
+    expect(r.totalMinor).toBe(0);
+    expect(r.discountClass).toBe("PRODUCT");
+  });
+
+  it("250 lines × 999 qty (far above the cap): no discount", () => {
+    expect(evaluateRule(rule(fixed(500, true)), hugeCart(250), RATE1).totalMinor).toBe(0);
+  });
+
+  it("the cap counts every cart line, eligible or not", () => {
+    const cart = hugeCart(MAX_CART_LINES + 1);
+    const allIneligibleButOne = { ...cart, lines: cart.lines.map((l, i) => ({ ...l, collectionIds: i === 0 ? l.collectionIds : [] })) };
+    expect(evaluateRule(rule(pct(10)), allIneligibleButOne, RATE1).totalMinor).toBe(0);
+  });
+
+  it("the cap is a positive integer read from limits.json", () => {
+    expect(Number.isInteger(MAX_CART_LINES) && MAX_CART_LINES > 0).toBe(true);
   });
 
   it("ignores lines whose subtotal would overflow integer maths", () => {
@@ -160,7 +181,7 @@ describe("huge carts", () => {
 
 describe("determinism", () => {
   it("same input → identical output", () => {
-    const cart = hugeCart(200, 3, 1999);
+    const cart = hugeCart(MAX_CART_LINES, 3, 1999);
     expect(evaluateRule(rule(pct(33.33)), cart, RATE1)).toEqual(evaluateRule(rule(pct(33.33)), cart, RATE1));
   });
 });

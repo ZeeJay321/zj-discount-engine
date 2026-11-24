@@ -10,8 +10,8 @@ export interface CartLine {
   quantity: number;
   /** Line subtotal (unit price × quantity) in the cart's currency, minor units. */
   subtotalMinor: number;
-  productId: string;
-  variantId: string | null;
+  productId?: string;
+  variantId?: string | null;
   /**
    * Collections this line's product belongs to, out of the ones the rule asks about.
    * The Function only learns "in any of the rule's collections: yes/no"; the adapter

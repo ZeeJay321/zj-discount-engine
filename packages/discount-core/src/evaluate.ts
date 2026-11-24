@@ -1,3 +1,4 @@
+import { MAX_CART_LINES } from "./limits";
 import { evaluateAmountOffProducts } from "./rules/amountOffProducts";
 import type { Cart, DiscountClass, EvaluableRule, EvaluateContext, RuleConfig, RuleResult } from "./types";
 
@@ -7,6 +8,7 @@ import type { Cart, DiscountClass, EvaluableRule, EvaluateContext, RuleConfig, R
  * startsAt/endsAt, and the simulator filters by date before calling this.
  */
 export function evaluateRule(rule: EvaluableRule, cart: Cart, ctx: EvaluateContext): RuleResult {
+  if (cart.lines.length > MAX_CART_LINES) return emptyResult(rule, cart);
   switch (rule.config.type) {
     case "AMOUNT_OFF_PRODUCTS":
       return evaluateAmountOffProducts({ ...rule, config: rule.config }, cart, ctx);
@@ -15,6 +17,17 @@ export function evaluateRule(rule: EvaluableRule, cart: Cart, ctx: EvaluateConte
       throw new Error(`Unsupported rule type: ${String(unknown)}`);
     }
   }
+}
+
+function emptyResult(rule: EvaluableRule, cart: Cart): RuleResult {
+  return {
+    ruleId: rule.ruleId,
+    discountClass: discountClassFor(rule.config),
+    message: rule.title,
+    currencyCode: cart.currencyCode,
+    lines: [],
+    totalMinor: 0,
+  };
 }
 
 export function discountClassFor(config: RuleConfig): DiscountClass {
