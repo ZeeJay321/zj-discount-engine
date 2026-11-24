@@ -38,6 +38,11 @@ jobs:
           npx prisma generate
           npx prisma validate
 
+      # extensions/zj-discount-function/generated/ is gitignored (template default);
+      # generate the Function input/output types from the committed schema.graphql.
+      - name: Generate Function types
+        run: npm run function:typegen
+
       - name: Typecheck
         run: npm run typecheck
 

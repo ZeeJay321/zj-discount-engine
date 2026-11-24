@@ -22,7 +22,8 @@
     "test:core": "npm run test --workspace @zj/discount-core",
     "test:app": "vitest run --config vitest.config.ts",
     "test:function": "npm run test --workspace zj-discount-function -- --run",
-    "function:perf": "node scripts/function-perf.mjs"
+    "function:perf": "node scripts/function-perf.mjs",
+    "function:typegen": "shopify app function typegen --no-input --path extensions/zj-discount-function"
   },
   "type": "module",
   "engines": {
