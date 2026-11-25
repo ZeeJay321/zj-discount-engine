@@ -3,7 +3,7 @@
  * Returns field-keyed errors; an empty array means the rule is valid.
  */
 import { MAX_LINE_SUBTOTAL_MINOR } from "./rules/target";
-import type { AmountOffProductsConfig, BuyXGetYConfig, ProductTarget, RuleDraft, TieredSpendConfig } from "./types";
+import type { AmountOffProductsConfig, BundleConfig, BuyXGetYConfig, ProductTarget, RuleDraft, TieredSpendConfig } from "./types";
 
 export interface ValidationError {
   /** Dotted path into RuleDraft, e.g. "config.value.percent". */
@@ -17,11 +17,16 @@ export const MAX_COLLECTIONS_PER_RULE = 50;
 export const MAX_PRODUCTS_PER_RULE = 100;
 export const MAX_BOGO_QUANTITY = 100;
 export const MAX_BOGO_LIMIT_PER_ORDER = 100;
+export const MIN_BUNDLE_COMPONENTS = 2;
+export const MAX_BUNDLE_COMPONENTS = 5;
+export const MAX_BUNDLE_COMPONENT_QUANTITY = 10;
+export const MAX_BUNDLE_LIMIT_PER_ORDER = 100;
 export const MIN_TIERS = 2;
 export const MAX_TIERS = 5;
 export const MAX_PRIORITY = 1000;
 const COLLECTION_GID = /^gid:\/\/shopify\/Collection\/\d+$/;
 const PRODUCT_GID = /^gid:\/\/shopify\/Product\/\d+$/;
+const VARIANT_GID = /^gid:\/\/shopify\/ProductVariant\/\d+$/;
 const CURRENCY = /^[A-Z]{3}$/;
 
 export function validateRule(draft: RuleDraft, others: readonly OtherRule[] = []): ValidationError[] {
@@ -49,6 +54,7 @@ export function validateRule(draft: RuleDraft, others: readonly OtherRule[] = []
   if (c && c.type === "AMOUNT_OFF_PRODUCTS") validateAmountOffProducts(c, add);
   else if (c && c.type === "TIERED_SPEND") validateTieredSpend(c, add);
   else if (c && c.type === "BUY_X_GET_Y") validateBuyXGetY(c, add);
+  else if (c && c.type === "BUNDLE") validateBundle(c, add);
   else add("config.type", "Unsupported rule type.");
 
   // Overlap: two enabled rules with the same priority whose date ranges intersect.
@@ -188,4 +194,41 @@ function validateTieredSpend(c: TieredSpendConfig, add: Add) {
     if (prevValue !== null && n < prevValue) add(vf, "A higher tier can't give a smaller discount than the tier before.");
     prevValue = n;
   });
+}
+
+/**
+ * Bundle: 2–5 components (a product or one variant), each quantity 1–10, no duplicates,
+ * and no variant whose product is also a component (one unit could count twice); limit
+ * per order 1–100; percentage in (0, 100], or a fixed amount / bundle price above 0.
+ */
+function validateBundle(c: BundleConfig, add: Add) {
+  if (typeof c.currencyCode !== "string" || !CURRENCY.test(c.currencyCode)) add("config.currencyCode", "Currency code is invalid.");
+  const comps = Array.isArray(c.components) ? c.components : [];
+  if (comps.length < MIN_BUNDLE_COMPONENTS || comps.length > MAX_BUNDLE_COMPONENTS) {
+    add("config.components", `Add between ${MIN_BUNDLE_COMPONENTS} and ${MAX_BUNDLE_COMPONENTS} components.`);
+  }
+  const seen = new Set<string>();
+  const wholeProducts = new Set(comps.filter((x) => x?.kind === "PRODUCT").map((x) => x.productId));
+  comps.forEach((comp, i) => {
+    const f = `config.components.${i}`;
+    if (comp?.kind === "PRODUCT") {
+      if (typeof comp.productId !== "string" || !PRODUCT_GID.test(comp.productId)) add(`${f}.item`, "Choose a product.");
+    } else if (comp?.kind === "VARIANT") {
+      if (typeof comp.variantId !== "string" || !VARIANT_GID.test(comp.variantId)) add(`${f}.item`, "Choose a variant.");
+      else if (wholeProducts.has(comp.productId)) add(`${f}.item`, "This variant's product is already a component.");
+    } else {
+      add(`${f}.item`, "Choose a product or variant.");
+      return;
+    }
+    const key = comp.kind === "VARIANT" ? comp.variantId : comp.productId;
+    if (seen.has(key)) add(`${f}.item`, "This component is already in the bundle.");
+    seen.add(key);
+    validateIntInRange(`${f}.quantity`, comp.quantity, 1, MAX_BUNDLE_COMPONENT_QUANTITY, "the quantity", add);
+  });
+  const v = c.value;
+  if (v?.kind === "PERCENTAGE") validatePercent("config.value", v.percent, add);
+  else if (v?.kind === "FIXED_AMOUNT") validateAmountMinor("config.value", v.amountMinor, add);
+  else if (v?.kind === "FIXED_PRICE") validateAmountMinor("config.value", v.priceMinor, add);
+  else add("config.value", "Choose how the bundle is discounted.");
+  validateIntInRange("config.limitPerOrder", c.limitPerOrder, 1, MAX_BUNDLE_LIMIT_PER_ORDER, "the limit per order", add);
 }

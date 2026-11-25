@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Form } from "react-router";
 import { useAppNavigate } from "./AppLink";
-import { MAX_CART_LINES, MAX_TIERS, MIN_TIERS, validateRule, type OtherRule, type RuleType } from "@zj/discount-core";
-import { describeBuyXGetY, describeTiers, RULE_TYPE_LABELS } from "../lib/rule-display";
+import { maxCartLinesFor, MAX_TIERS, MIN_TIERS, validateRule, type OtherRule, type RuleType } from "@zj/discount-core";
+import { describeBundle, describeBuyXGetY, describeTiers, RULE_TYPE_LABELS } from "../lib/rule-display";
+import { BundleEditor, type ComponentRow } from "./BundleEditor";
+import { Select } from "./Select";
 import { TargetPicker, type TargetKind } from "./TargetPicker";
 import { errorsByFormField, parseRuleForm, type FormContext } from "../lib/rule-form";
 
@@ -25,6 +27,9 @@ export interface RuleFormValues {
   getQuantity: string;
   bogoPercent: string;
   limitPerOrder: string;
+  components: ComponentRow[];
+  bundleValueKind: "PERCENTAGE" | "FIXED_AMOUNT" | "FIXED_PRICE";
+  bundleValue: string;
   combinesOrder: boolean;
   combinesProduct: boolean;
   combinesShipping: boolean;
@@ -49,24 +54,10 @@ const checked = (on: boolean) => (on ? { checked: true } : {});
 let tierKeySeq = 0;
 const newTierKey = () => `tier-${++tierKeySeq}`;
 
-/** React 18 doesn't wire custom-element events from props; listen on the element directly. */
-function useElementValue<T extends string>(initial: T, parse: (v: string) => T) {
-  const [value, setValue] = useState<T>(initial);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ref = useRef<any>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onChange = () => setValue(parse(String(el.value)));
-    el.addEventListener("change", onChange);
-    return () => el.removeEventListener("change", onChange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return [value, ref] as const;
-}
+
 
 const asKind = (v: string) => (v === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE") as "PERCENTAGE" | "FIXED_AMOUNT";
-const asType = (v: string) => (v === "TIERED_SPEND" || v === "BUY_X_GET_Y" ? v : "AMOUNT_OFF_PRODUCTS") as RuleType;
+const asType = (v: string) => (v === "TIERED_SPEND" || v === "BUY_X_GET_Y" || v === "BUNDLE" ? v : "AMOUNT_OFF_PRODUCTS") as RuleType;
 
 export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, submitting, submitLabel, isEdit }: Props) {
   const go = useAppNavigate();
@@ -74,14 +65,40 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
   const [errors, setErrors] = useState<Record<string, string>>(serverErrors ?? {});
   const [triedSubmit, setTriedSubmit] = useState(false);
   const [preview, setPreview] = useState<string[]>([]);
-  const [ruleType, typeRef] = useElementValue<RuleType>(values.ruleType, asType);
-  const [valueKind, kindRef] = useElementValue(values.valueKind, asKind);
-  const [tierKind, tierKindRef] = useElementValue(values.tierKind, asKind);
+  const [ruleType, setRuleType] = useState<RuleType>(values.ruleType);
+  const [valueKind, setValueKind] = useState(values.valueKind);
+  const [tierKind, setTierKind] = useState(values.tierKind);
+  const [appliesTo, setAppliesTo] = useState(values.appliesTo);
+  const [bundleTitles, setBundleTitles] = useState<Record<string, string>>(resourceTitles);
+  const [componentCount, setComponentCount] = useState(values.components.length);
+  const cap = maxCartLinesFor(ruleType);
   const [tiers, setTiers] = useState(() => values.tiers.map((t) => ({ ...t, key: newTierKey() })));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bogoPercentRef = useRef<any>(null);
 
   useEffect(() => setErrors(serverErrors ?? {}), [serverErrors]);
+
+  // React 18 sets only *attributes* on custom elements. Polaris fields don't all read
+  // their initial `value` / `checked` attribute, so a saved value could show wrong (the
+  // same bug the Select wrapper fixes). Copy each field's initial attribute into its
+  // property ONCE, when the field first appears — never afterwards, so typing is kept.
+  const initialised = useRef(new WeakSet<Element>());
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+    form.querySelectorAll("s-text-field, s-number-field, s-date-field, s-checkbox").forEach((node) => {
+      if (initialised.current.has(node)) return;
+      initialised.current.add(node);
+      const el = node as unknown as { value?: string; checked?: boolean };
+      if (node.tagName.toLowerCase() === "s-checkbox") {
+        const want = node.hasAttribute("checked");
+        if (el.checked !== want) el.checked = want;
+      } else {
+        const attr = node.getAttribute("value");
+        if (attr !== null && el.value !== attr) el.value = attr;
+      }
+    });
+  });
 
   /** Parse + validate the current form contents with the shared core. */
   function check() {
@@ -100,7 +117,15 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
       const res = check();
       if (!res) return;
       const c = res.draft.config;
-      setPreview(c.type === "TIERED_SPEND" ? describeTiers(c) : c.type === "BUY_X_GET_Y" ? [describeBuyXGetY(c)] : []);
+      setPreview(
+        c.type === "TIERED_SPEND"
+          ? describeTiers(c)
+          : c.type === "BUY_X_GET_Y"
+            ? [describeBuyXGetY(c)]
+            : c.type === "BUNDLE"
+              ? [describeBundle(c, bundleTitles)]
+              : [],
+      );
       if (triedSubmit) setErrors(errorsByFormField(res.all));
     };
     refresh();
@@ -112,7 +137,7 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
       form.removeEventListener("change", refresh, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [triedSubmit, ruleType, tierKind, tiers.length]);
+  }, [triedSubmit, ruleType, tierKind, tiers.length, componentCount, bundleTitles]);
 
   /** "Make it free": set the percentage to 100 and let the preview/validation refresh. */
   function makeFree() {
@@ -161,11 +186,18 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
               </s-text>
             </>
           ) : (
-            <s-select label="Rule type" name="ruleType" value={ruleType} ref={typeRef}>
-              <s-option value="AMOUNT_OFF_PRODUCTS">{RULE_TYPE_LABELS.AMOUNT_OFF_PRODUCTS}</s-option>
-              <s-option value="TIERED_SPEND">{RULE_TYPE_LABELS.TIERED_SPEND} (spend X, get Y off the order)</s-option>
-              <s-option value="BUY_X_GET_Y">{RULE_TYPE_LABELS.BUY_X_GET_Y} (cheapest units discounted)</s-option>
-            </s-select>
+            <Select
+              label="Rule type"
+              name="ruleType"
+              value={ruleType}
+              onChange={(v) => setRuleType(asType(v))}
+              options={[
+                { value: "AMOUNT_OFF_PRODUCTS", label: RULE_TYPE_LABELS.AMOUNT_OFF_PRODUCTS },
+                { value: "TIERED_SPEND", label: `${RULE_TYPE_LABELS.TIERED_SPEND} (spend X, get Y off the order)` },
+                { value: "BUY_X_GET_Y", label: `${RULE_TYPE_LABELS.BUY_X_GET_Y} (cheapest units discounted)` },
+                { value: "BUNDLE", label: `${RULE_TYPE_LABELS.BUNDLE} (these items together get a price off)` },
+              ]}
+            />
           )}
           <s-text-field label="Title" name="title" value={values.title} details="Shown to customers at checkout." {...err("title")} />
           <s-number-field label="Priority" name="priority" value={values.priority} min={0} max={1000} step={1}
@@ -173,7 +205,25 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
         </s-stack>
       </s-section>
 
-      {ruleType !== "TIERED_SPEND" && (
+      {ruleType === "BUNDLE" && (
+        <s-section heading="Bundle">
+          <BundleEditor
+            rows={values.components}
+            valueKind={values.bundleValueKind}
+            value={values.bundleValue}
+            limitPerOrder={values.limitPerOrder}
+            currency={cur}
+            titles={resourceTitles}
+            onTitles={setBundleTitles}
+            onRowsChange={setComponentCount}
+            errors={errors}
+            preview={preview[0] ?? null}
+            cap={cap}
+          />
+        </s-section>
+      )}
+
+      {(ruleType === "AMOUNT_OFF_PRODUCTS" || ruleType === "BUY_X_GET_Y") && (
         <s-section heading="Products">
           <TargetPicker kind={values.targetKind} ids={values.targetIds} titles={resourceTitles} error={errors.targetIds} />
         </s-section>
@@ -198,7 +248,7 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
             <s-number-field label="Limit per order" name="limitPerOrder" value={values.limitPerOrder} min={1} max={100} step={1}
               suffix="times" details="How many times the offer can apply in one order (1–100)." {...err("limitPerOrder")} />
             <s-text color="subdued">
-              Applies to carts with up to {MAX_CART_LINES} lines. Larger carts get no discount from this rule
+              Applies to carts with up to {cap} lines. Larger carts get no discount from this rule
               (Shopify Function instruction limit).
             </s-text>
             {preview.length > 0 && (
@@ -218,24 +268,38 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
 
           <s-section heading="Value">
             <s-stack direction="block" gap="base">
-              <s-select label="Discount type" name="valueKind" value={valueKind} ref={kindRef} {...err("valueKind")}>
-                <s-option value="PERCENTAGE">Percentage</s-option>
-                <s-option value="FIXED_AMOUNT">Fixed amount ({cur})</s-option>
-              </s-select>
+              <Select
+                label="Discount type"
+                name="valueKind"
+                value={valueKind}
+                onChange={(v) => setValueKind(asKind(v))}
+                error={errors.valueKind}
+                options={[
+                  { value: "PERCENTAGE", label: "Percentage" },
+                  { value: "FIXED_AMOUNT", label: `Fixed amount (${cur})` },
+                ]}
+              />
               {valueKind === "PERCENTAGE" ? (
                 <s-number-field label="Percentage off" name="percent" value={values.percent} min={0.01} max={100} step={0.01} suffix="%" {...err("percent")} />
               ) : (
                 <>
                   <s-text-field label={`Amount off (${cur})`} name="amount" value={values.amount} placeholder="5.00"
                     details="In the store's currency; converted at checkout for other currencies." {...err("amount")} />
-                  <s-select label="Applies" name="appliesTo" value={values.appliesTo} {...err("appliesTo")}>
-                    <s-option value="each">To each eligible item</s-option>
-                    <s-option value="once">Once per order, split across eligible items</s-option>
-                  </s-select>
+                  <Select
+                    label="Applies"
+                    name="appliesTo"
+                    value={appliesTo}
+                    onChange={(v) => setAppliesTo(v === "once" ? "once" : "each")}
+                    error={errors.appliesTo}
+                    options={[
+                      { value: "each", label: "To each eligible item" },
+                      { value: "once", label: "Once per order, split across eligible items" },
+                    ]}
+                  />
                 </>
               )}
               <s-text color="subdued">
-                Applies to carts with up to {MAX_CART_LINES} lines. Larger carts get no discount from this rule
+                Applies to carts with up to {cap} lines. Larger carts get no discount from this rule
                 (Shopify Function instruction limit).
               </s-text>
             </s-stack>
@@ -248,10 +312,16 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
               The highest tier the cart subtotal reaches applies, to the whole order. Exactly at a threshold counts.
               No cart-size limit for this rule type.
             </s-paragraph>
-            <s-select label="Discount per tier" name="tierKind" value={tierKind} ref={tierKindRef}>
-              <s-option value="PERCENTAGE">Percentage off the order</s-option>
-              <s-option value="FIXED_AMOUNT">Fixed amount off the order ({cur})</s-option>
-            </s-select>
+            <Select
+              label="Discount per tier"
+              name="tierKind"
+              value={tierKind}
+              onChange={(v) => setTierKind(asKind(v))}
+              options={[
+                { value: "PERCENTAGE", label: "Percentage off the order" },
+                { value: "FIXED_AMOUNT", label: `Fixed amount off the order (${cur})` },
+              ]}
+            />
             {tiers.map((t, i) => (
               <s-stack key={t.key} direction="inline" gap="base">
                 <s-text-field label={`Tier ${i + 1}: spend (${cur}) or more`} name="tierThreshold" value={t.threshold}

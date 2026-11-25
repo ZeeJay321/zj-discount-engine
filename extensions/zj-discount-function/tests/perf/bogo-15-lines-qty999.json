@@ -21,6 +21,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000000000000",
               "product": {
                 "id": "gid://shopify/Product/8000000000000",
                 "inAnyCollection": true
@@ -36,6 +37,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000001000033",
               "product": {
                 "id": "gid://shopify/Product/8000001000003",
                 "inAnyCollection": true
@@ -51,6 +53,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000002000066",
               "product": {
                 "id": "gid://shopify/Product/8000002000006",
                 "inAnyCollection": true
@@ -66,6 +69,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000003000099",
               "product": {
                 "id": "gid://shopify/Product/8000003000009",
                 "inAnyCollection": true
@@ -81,6 +85,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000004000132",
               "product": {
                 "id": "gid://shopify/Product/8000004000012",
                 "inAnyCollection": true
@@ -96,6 +101,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000005000165",
               "product": {
                 "id": "gid://shopify/Product/8000005000015",
                 "inAnyCollection": true
@@ -111,6 +117,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000006000198",
               "product": {
                 "id": "gid://shopify/Product/8000006000018",
                 "inAnyCollection": true
@@ -126,6 +133,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000007000231",
               "product": {
                 "id": "gid://shopify/Product/8000007000021",
                 "inAnyCollection": true
@@ -141,6 +149,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000008000264",
               "product": {
                 "id": "gid://shopify/Product/8000008000024",
                 "inAnyCollection": true
@@ -156,6 +165,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000009000297",
               "product": {
                 "id": "gid://shopify/Product/8000009000027",
                 "inAnyCollection": true
@@ -171,6 +181,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000010000330",
               "product": {
                 "id": "gid://shopify/Product/8000010000030",
                 "inAnyCollection": true
@@ -186,6 +197,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000011000363",
               "product": {
                 "id": "gid://shopify/Product/8000011000033",
                 "inAnyCollection": true
@@ -201,6 +213,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000012000396",
               "product": {
                 "id": "gid://shopify/Product/8000012000036",
                 "inAnyCollection": true
@@ -216,6 +229,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000013000429",
               "product": {
                 "id": "gid://shopify/Product/8000013000039",
                 "inAnyCollection": true
@@ -231,6 +245,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000014000462",
               "product": {
                 "id": "gid://shopify/Product/8000014000042",
                 "inAnyCollection": true

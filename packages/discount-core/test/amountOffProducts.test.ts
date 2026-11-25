@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { evaluateRule, MAX_CART_LINES, MAX_LINE_SUBTOTAL_MINOR } from "../src";
+import { evaluateRule, MAX_CART_LINES_BY_TYPE, MAX_LINE_SUBTOTAL_MINOR } from "../src";
 import { C100, C200, fixed, hugeCart, loadCart, pct, rule } from "./helpers";
+
+const MAX_CART_LINES = MAX_CART_LINES_BY_TYPE.AMOUNT_OFF_PRODUCTS;
 
 const RATE1 = { presentmentCurrencyRate: "1.0" };
 const amounts = (r: ReturnType<typeof evaluateRule>) => r.lines.map((l) => [l.lineId.split("/").pop(), l.amountMinor]);
@@ -151,8 +153,11 @@ describe("huge carts and the line cap", () => {
     expect(evaluateRule(rule(pct(10)), allIneligibleButOne, RATE1).totalMinor).toBe(0);
   });
 
-  it("the cap is a positive integer read from limits.json", () => {
-    expect(Number.isInteger(MAX_CART_LINES) && MAX_CART_LINES > 0).toBe(true);
+  it("caps are positive integers read from limits.json, and tiered spend has none", async () => {
+    const { MAX_CART_LINES_BY_TYPE: caps, maxCartLinesFor } = await import("../src");
+    for (const v of Object.values(caps)) expect(Number.isInteger(v) && v > 0).toBe(true);
+    expect(maxCartLinesFor("TIERED_SPEND")).toBeNull();
+    expect(maxCartLinesFor("BUNDLE")).toBe(caps.BUNDLE);
   });
 
   it("ignores lines whose subtotal would overflow integer maths", () => {

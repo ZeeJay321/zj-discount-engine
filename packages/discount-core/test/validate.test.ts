@@ -214,3 +214,56 @@ describe("validateRule — buy X get Y and product targets", () => {
     expect(validateRule(bogo(), [{ ...other, priority: 11 }])).toEqual([]);
   });
 });
+
+describe("validateRule — bundles", () => {
+  const comp = (n: number, quantity = 1) => ({ kind: "PRODUCT" as const, productId: `gid://shopify/Product/${n}`, quantity });
+  const bundle = (o: Record<string, unknown> = {}) =>
+    draft({
+      config: {
+        type: "BUNDLE",
+        currencyCode: "USD",
+        components: [comp(1), comp(2)],
+        value: { kind: "PERCENTAGE", percent: 20 },
+        limitPerOrder: 3,
+        ...o,
+      } as RuleDraft["config"],
+    });
+  const f = (d: RuleDraft) => validateRule(d).map((e) => e.field);
+
+  it("accepts 2–5 components and every value kind", () => {
+    expect(validateRule(bundle())).toEqual([]);
+    expect(validateRule(bundle({ components: [comp(1, 10), comp(2), comp(3), comp(4), comp(5)], limitPerOrder: 100 }))).toEqual([]);
+    expect(validateRule(bundle({ value: { kind: "FIXED_AMOUNT", amountMinor: 500 } }))).toEqual([]);
+    expect(validateRule(bundle({ value: { kind: "FIXED_PRICE", priceMinor: 5000 } }))).toEqual([]);
+    expect(validateRule(bundle({ components: [comp(1), { kind: "VARIANT", variantId: "gid://shopify/ProductVariant/9", productId: "gid://shopify/Product/2", quantity: 2 }] }))).toEqual([]);
+  });
+
+  it.each([
+    ["one component", { components: [comp(1)] }, "config.components"],
+    ["six components", { components: [1, 2, 3, 4, 5, 6].map((n) => comp(n)) }, "config.components"],
+    ["duplicate product", { components: [comp(1), comp(1)] }, "config.components.1.item"],
+    ["duplicate variant", { components: [comp(1), { kind: "VARIANT", variantId: "gid://shopify/ProductVariant/9", productId: "gid://shopify/Product/2", quantity: 1 }, { kind: "VARIANT", variantId: "gid://shopify/ProductVariant/9", productId: "gid://shopify/Product/2", quantity: 1 }] }, "config.components.2.item"],
+    ["variant of a whole-product component", { components: [comp(1), { kind: "VARIANT", variantId: "gid://shopify/ProductVariant/9", productId: "gid://shopify/Product/1", quantity: 1 }] }, "config.components.1.item"],
+    ["bad product gid", { components: [comp(1), { kind: "PRODUCT", productId: "gid://shopify/Collection/2", quantity: 1 }] }, "config.components.1.item"],
+    ["bad variant gid", { components: [comp(1), { kind: "VARIANT", variantId: "x", productId: "gid://shopify/Product/2", quantity: 1 }] }, "config.components.1.item"],
+    ["unknown component kind", { components: [comp(1), { kind: "SKU" }] }, "config.components.1.item"],
+    ["quantity 0", { components: [comp(1, 0), comp(2)] }, "config.components.0.quantity"],
+    ["quantity 11", { components: [comp(1), comp(2, 11)] }, "config.components.1.quantity"],
+    ["percent 0", { value: { kind: "PERCENTAGE", percent: 0 } }, "config.value"],
+    ["percent > 100", { value: { kind: "PERCENTAGE", percent: 101 } }, "config.value"],
+    ["fixed amount 0", { value: { kind: "FIXED_AMOUNT", amountMinor: 0 } }, "config.value"],
+    ["fixed price negative", { value: { kind: "FIXED_PRICE", priceMinor: -1 } }, "config.value"],
+    ["no value kind", { value: { kind: "X" } }, "config.value"],
+    ["limit 0", { limitPerOrder: 0 }, "config.limitPerOrder"],
+    ["limit 101", { limitPerOrder: 101 }, "config.limitPerOrder"],
+    ["bad currency", { currencyCode: "usd" }, "config.currencyCode"],
+  ])("rejects %s", (_n, o, field) => expect(f(bundle(o))).toContain(field));
+
+  it("rejects missing components", () => expect(f(bundle({ components: undefined }))).toContain("config.components"));
+
+  it("same-priority overlap check applies (covers bundles sharing a component)", () => {
+    const other = { id: "o", title: "Other bundle", enabled: true, priority: 10, startsAt: "2026-12-01T00:00:00.000Z", endsAt: null };
+    expect(f(bundle())).toEqual([]);
+    expect(validateRule(bundle(), [other]).map((e) => e.field)).toContain("priority");
+  });
+});

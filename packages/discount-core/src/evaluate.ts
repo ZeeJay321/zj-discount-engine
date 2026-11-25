@@ -1,5 +1,6 @@
-import { MAX_CART_LINES } from "./limits";
+import { MAX_CART_LINES_BY_TYPE } from "./limits";
 import { evaluateAmountOffProducts } from "./rules/amountOffProducts";
+import { evaluateBundle } from "./rules/bundle";
 import { evaluateBuyXGetY } from "./rules/buyXGetY";
 import { evaluateTieredSpend } from "./rules/tieredSpend";
 import type { Cart, DiscountClass, EvaluableRule, EvaluateContext, RuleConfig, RuleResult } from "./types";
@@ -12,13 +13,15 @@ import type { Cart, DiscountClass, EvaluableRule, EvaluateContext, RuleConfig, R
 export function evaluateRule(rule: EvaluableRule, cart: Cart, ctx: EvaluateContext): RuleResult {
   switch (rule.config.type) {
     case "AMOUNT_OFF_PRODUCTS":
-      // Product rules are capped by cart size (Function instruction budget; see README).
-      if (cart.lines.length > MAX_CART_LINES) return emptyResult(rule, cart);
+      // Product rules are capped by cart size, per type (Function instruction budget; see README).
+      if (cart.lines.length > MAX_CART_LINES_BY_TYPE.AMOUNT_OFF_PRODUCTS) return emptyResult(rule, cart);
       return evaluateAmountOffProducts({ ...rule, config: rule.config }, cart, ctx);
     case "BUY_X_GET_Y":
-      // Product rule: same cart-size cap as amount-off.
-      if (cart.lines.length > MAX_CART_LINES) return emptyResult(rule, cart);
+      if (cart.lines.length > MAX_CART_LINES_BY_TYPE.BUY_X_GET_Y) return emptyResult(rule, cart);
       return evaluateBuyXGetY({ ...rule, config: rule.config }, cart, ctx);
+    case "BUNDLE":
+      if (cart.lines.length > MAX_CART_LINES_BY_TYPE.BUNDLE) return emptyResult(rule, cart);
+      return evaluateBundle({ ...rule, config: rule.config }, cart, ctx);
     case "TIERED_SPEND":
       // Order rules read only the subtotal, so they have no cart-size cap.
       return evaluateTieredSpend({ ...rule, config: rule.config }, cart, ctx);
@@ -46,6 +49,7 @@ export function discountClassFor(config: RuleConfig): DiscountClass {
     case "AMOUNT_OFF_PRODUCTS":
       return "PRODUCT";
     case "BUY_X_GET_Y":
+    case "BUNDLE":
       return "PRODUCT";
     case "TIERED_SPEND":
       return "ORDER";

@@ -6,6 +6,7 @@ export * from "./schema";
 export * from "./validate";
 export { evaluateAmountOffProducts } from "./rules/amountOffProducts";
 export { evaluateBuyXGetY } from "./rules/buyXGetY";
+export { componentIndexOf, evaluateBundle } from "./rules/bundle";
 export { isUsableLine, matchesTarget, MAX_LINE_SUBTOTAL_MINOR, unitPriceOf } from "./rules/target";
-export { MAX_CART_LINES } from "./limits";
+export { MAX_CART_LINES_BY_TYPE, maxCartLinesFor, type ProductRuleType } from "./limits";
 export { evaluateTieredSpend, cartSubtotalMinor } from "./rules/tieredSpend";

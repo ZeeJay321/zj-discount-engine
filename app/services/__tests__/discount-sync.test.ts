@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RuleDraft } from "@zj/discount-core";
+import { RULE_CONFIG_SCHEMA_VERSION, type RuleDraft } from "@zj/discount-core";
 import {
   deleteRule,
   reconcile,
@@ -51,7 +51,7 @@ describe("toDiscountInput", () => {
     const mf = input.metafields[0];
     expect(mf).toMatchObject({ namespace: "$app", key: "rule-config", type: "json" });
     expect(JSON.parse(mf.value)).toEqual({
-      schemaVersion: 3,
+      schemaVersion: RULE_CONFIG_SCHEMA_VERSION,
       ruleId: "rule_1",
       title: "10% off Winter",
       collectionIds: [C1],
@@ -433,7 +433,7 @@ describe("tiered spend rules", () => {
     const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
     expect(sent.automaticAppDiscount.discountClasses).toEqual(["ORDER"]);
     const payload = JSON.parse(sent.automaticAppDiscount.metafields[0].value);
-    expect(payload).toMatchObject({ schemaVersion: 3, collectionIds: [], config: tiers });
+    expect(payload).toMatchObject({ schemaVersion: RULE_CONFIG_SCHEMA_VERSION, collectionIds: [], config: tiers });
   });
 
   it.each([
@@ -492,14 +492,14 @@ describe("buy X get Y rules", () => {
     limitPerOrder: 3,
   };
 
-  it("are created as PRODUCT discounts with a v3 metafield (product list, no collection variable)", async () => {
+  it("are created as PRODUCT discounts with the current metafield version (product list, no collection variable)", async () => {
     const t = setup({ ZjCreateRuleDiscount: created() });
     const res = await saveRule(t.deps, draft({ title: "Buy 2 get 1 free", config: bogo }));
     expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
     const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
     expect(sent.automaticAppDiscount.discountClasses).toEqual(["PRODUCT"]);
     expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value)).toEqual({
-      schemaVersion: 3,
+      schemaVersion: RULE_CONFIG_SCHEMA_VERSION,
       ruleId: res.ok ? res.rule.id : "",
       title: "Buy 2 get 1 free",
       collectionIds: [],
@@ -540,6 +540,53 @@ describe("buy X get Y rules", () => {
     expect(res.ok).toBe(false);
     if (res.ok) return;
     expect(res.errors.map((e) => e.field).sort()).toEqual(["config.getQuantity", "config.limitPerOrder"]);
+    expect(t.calls).toHaveLength(0);
+  });
+});
+
+describe("bundle rules", () => {
+  const bundle: RuleDraft["config"] = {
+    type: "BUNDLE",
+    currencyCode: "USD",
+    components: [
+      { kind: "PRODUCT", productId: "gid://shopify/Product/1", quantity: 1 },
+      { kind: "VARIANT", variantId: "gid://shopify/ProductVariant/22", productId: "gid://shopify/Product/2", quantity: 1 },
+    ],
+    value: { kind: "PERCENTAGE", percent: 20 },
+    limitPerOrder: 3,
+  };
+
+  it("are created as PRODUCT discounts with a v4 metafield", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    const res = await saveRule(t.deps, draft({ title: "Shirt + Jeans", config: bundle }));
+    expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.discountClasses).toEqual(["PRODUCT"]);
+    expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value)).toMatchObject({ schemaVersion: 4, collectionIds: [], config: bundle });
+  });
+
+  it.each([
+    [{ orderDiscounts: true, productDiscounts: false, shippingDiscounts: true }],
+    [{ orderDiscounts: false, productDiscounts: true, shippingDiscounts: false }],
+  ])("send combinesWith exactly as chosen: %j", async (combinesWith) => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    await saveRule(t.deps, draft({ config: bundle, combinesWith }));
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.combinesWith).toEqual(combinesWith);
+  });
+
+  it("type is fixed after creation", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    const a = await saveRule(t.deps, draft({ config: bundle }));
+    if (!a.ok) throw new Error("setup");
+    const res = await saveRule(t.deps, draft({ id: a.rule.id }));
+    expect(res.ok).toBe(false);
+  });
+
+  it("invalid bundles are rejected before any Shopify call", async () => {
+    const t = setup({});
+    const res = await saveRule(t.deps, draft({ config: { ...bundle, components: [bundle.type === "BUNDLE" ? bundle.components[0] : null] } as RuleDraft["config"] }));
+    expect(res.ok).toBe(false);
     expect(t.calls).toHaveLength(0);
   });
 });

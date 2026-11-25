@@ -10,6 +10,7 @@ import {
   minorToNumber,
   type Cart,
   type CartLine,
+  type BundleComponent,
   type ProductTarget,
   type RuleResult,
 } from "@zj/discount-core";
@@ -23,29 +24,50 @@ export interface LinesInputLike {
       id: string;
       quantity: number;
       cost: { amountPerQuantity: { amount: string | number } };
-      merchandise: { product?: { id: string; inAnyCollection: boolean } };
+      merchandise: { id?: string; product?: { id: string; inAnyCollection: boolean } };
     }>;
   };
 }
 
 /**
- * Lines in the rule's product set, as core lines. Lines outside the set can never be
- * discounted (and don't count towards buy X get Y sets), so they are dropped before the
- * comparatively costly amount parsing; core filters by the same target, so the result
- * is identical. Collection targets use the input query's `inAnyCollection` yes/no;
- * product targets compare the line's product id.
+ * The rule's lines, as core lines. Lines the rule can't use can never be discounted
+ * (and don't count towards buy X get Y sets or bundles), so they are dropped before the
+ * comparatively costly amount parsing; core matches by the same rule, so the result is
+ * identical. `keep` decides: collection targets use the query's `inAnyCollection`,
+ * product targets the product id, bundles the variant or product id.
  */
-export function toCoreCart(input: LinesInputLike, target: ProductTarget, collectionIds: readonly string[]): Cart {
+/** Line filter: keep a line (variant id, product id, inAnyCollection) for this rule? */
+export type LineFilter = (variantId: string, productId: string, inAnyCollection: boolean) => boolean;
+
+/** Amount-off / buy X get Y: in the rule's product set (collections or product list). */
+export function targetFilter(target: ProductTarget): LineFilter {
+  if (target.kind === "PRODUCTS") {
+    const ids = target.productIds;
+    return (_v, productId) => ids.includes(productId);
+  }
+  return (_v, _p, inAnyCollection) => inAnyCollection;
+}
+
+/** Bundles: the line is one of the components (a whole product or that exact variant). */
+export function bundleFilter(components: readonly BundleComponent[]): LineFilter {
+  const variants: string[] = [];
+  const products: string[] = [];
+  for (const c of components) (c.kind === "VARIANT" ? variants : products).push(c.kind === "VARIANT" ? c.variantId : c.productId);
+  return (variantId, productId) => variants.includes(variantId) || products.includes(productId);
+}
+
+export function toCoreCart(input: LinesInputLike, keep: LineFilter, collectionIds: readonly string[]): Cart {
   const currencyCode = input.cart.cost.subtotalAmount.currencyCode;
   const exp = currencyExponent(currencyCode);
   const src = input.cart.lines;
-  const productIds = target.kind === "PRODUCTS" ? target.productIds : null;
   const lines: CartLine[] = [];
   for (let i = 0; i < src.length; i++) {
     const line = src[i];
-    const product = line.merchandise.product;
+    const m = line.merchandise;
+    const product = m.product;
     if (product === undefined) continue;
-    if (productIds !== null ? !productIds.includes(product.id) : !product.inAnyCollection) continue;
+    const variantId = m.id ?? "";
+    if (!keep(variantId, product.id, product.inAnyCollection)) continue;
     let unitPriceMinor: number;
     try {
       unitPriceMinor = decimalToMinor(line.cost.amountPerQuantity.amount, exp);
@@ -58,6 +80,7 @@ export function toCoreCart(input: LinesInputLike, target: ProductTarget, collect
       unitPriceMinor,
       subtotalMinor: unitPriceMinor * line.quantity,
       productId: product.id,
+      variantId,
       // "in any of the rule's collections" → the rule's collection ids (core re-checks)
       collectionIds,
     });
@@ -78,7 +101,7 @@ export function toProductOperations(result: RuleResult) {
   for (let i = 0; i < n; i++) {
     const l = result.lines[i];
     candidates[i] = {
-      // quantity: discount only that many units of the line (buy X get Y); absent = whole line.
+      // quantity: discount only that many units of the line (buy X get Y, bundles); absent = whole line.
       targets: [l.quantity === undefined ? { cartLine: { id: l.lineId } } : { cartLine: { id: l.lineId, quantity: l.quantity } }],
       value: { fixedAmount: { amount: minorToNumber(l.amountMinor, exp) } },
     };

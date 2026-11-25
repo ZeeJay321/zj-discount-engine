@@ -1,0 +1,126 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "150.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "9000",
+            "currencyCode": "JPY"
+          }
+        },
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "4500"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/1",
+              "product": {
+                "id": "gid://shopify/Product/1",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/2",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "4500"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/2",
+              "product": {
+                "id": "gid://shopify/Product/2",
+                "inAnyCollection": true
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 4,
+            "ruleId": "bundle_1",
+            "title": "Shirt + Jeans",
+            "collectionIds": [],
+            "config": {
+              "type": "BUNDLE",
+              "currencyCode": "USD",
+              "components": [
+                {
+                  "kind": "PRODUCT",
+                  "productId": "gid://shopify/Product/1",
+                  "quantity": 1
+                },
+                {
+                  "kind": "PRODUCT",
+                  "productId": "gid://shopify/Product/2",
+                  "quantity": 1
+                }
+              ],
+              "value": {
+                "kind": "FIXED_PRICE",
+                "priceMinor": 5000
+              },
+              "limitPerOrder": 3
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "productDiscountsAdd": {
+            "candidates": [
+              {
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/1",
+                      "quantity": 1
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 750
+                  }
+                }
+              },
+              {
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/2",
+                      "quantity": 1
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 750
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "ALL"
+          }
+        }
+      ]
+    }
+  }
+}

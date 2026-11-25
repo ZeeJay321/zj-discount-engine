@@ -7,7 +7,7 @@
       "cart": {
         "cost": {
           "subtotalAmount": {
-            "amount": "300.00",
+            "amount": "270.00",
             "currencyCode": "USD"
           }
         },
@@ -21,6 +21,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/0",
               "product": {
                 "id": "gid://shopify/Product/0",
                 "inAnyCollection": true
@@ -36,6 +37,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/1",
               "product": {
                 "id": "gid://shopify/Product/1",
                 "inAnyCollection": true
@@ -51,6 +53,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/2",
               "product": {
                 "id": "gid://shopify/Product/2",
                 "inAnyCollection": true
@@ -66,6 +69,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/3",
               "product": {
                 "id": "gid://shopify/Product/3",
                 "inAnyCollection": true
@@ -81,6 +85,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/4",
               "product": {
                 "id": "gid://shopify/Product/4",
                 "inAnyCollection": true
@@ -96,6 +101,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/5",
               "product": {
                 "id": "gid://shopify/Product/5",
                 "inAnyCollection": true
@@ -111,6 +117,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/6",
               "product": {
                 "id": "gid://shopify/Product/6",
                 "inAnyCollection": true
@@ -126,6 +133,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/7",
               "product": {
                 "id": "gid://shopify/Product/7",
                 "inAnyCollection": true
@@ -141,6 +149,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/8",
               "product": {
                 "id": "gid://shopify/Product/8",
                 "inAnyCollection": true
@@ -156,6 +165,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/9",
               "product": {
                 "id": "gid://shopify/Product/9",
                 "inAnyCollection": true
@@ -171,6 +181,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/10",
               "product": {
                 "id": "gid://shopify/Product/10",
                 "inAnyCollection": true
@@ -186,6 +197,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/11",
               "product": {
                 "id": "gid://shopify/Product/11",
                 "inAnyCollection": true
@@ -201,6 +213,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/12",
               "product": {
                 "id": "gid://shopify/Product/12",
                 "inAnyCollection": true
@@ -216,6 +229,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/13",
               "product": {
                 "id": "gid://shopify/Product/13",
                 "inAnyCollection": true
@@ -231,6 +245,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/14",
               "product": {
                 "id": "gid://shopify/Product/14",
                 "inAnyCollection": true
@@ -246,6 +261,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/15",
               "product": {
                 "id": "gid://shopify/Product/15",
                 "inAnyCollection": true
@@ -261,6 +277,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/16",
               "product": {
                 "id": "gid://shopify/Product/16",
                 "inAnyCollection": true
@@ -276,6 +293,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/17",
               "product": {
                 "id": "gid://shopify/Product/17",
                 "inAnyCollection": true
@@ -291,6 +309,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/18",
               "product": {
                 "id": "gid://shopify/Product/18",
                 "inAnyCollection": true
@@ -306,6 +325,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/19",
               "product": {
                 "id": "gid://shopify/Product/19",
                 "inAnyCollection": true
@@ -321,6 +341,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/20",
               "product": {
                 "id": "gid://shopify/Product/20",
                 "inAnyCollection": true
@@ -336,6 +357,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/21",
               "product": {
                 "id": "gid://shopify/Product/21",
                 "inAnyCollection": true
@@ -351,6 +373,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/22",
               "product": {
                 "id": "gid://shopify/Product/22",
                 "inAnyCollection": true
@@ -366,6 +389,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/23",
               "product": {
                 "id": "gid://shopify/Product/23",
                 "inAnyCollection": true
@@ -381,6 +405,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/24",
               "product": {
                 "id": "gid://shopify/Product/24",
                 "inAnyCollection": true
@@ -396,6 +421,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/25",
               "product": {
                 "id": "gid://shopify/Product/25",
                 "inAnyCollection": true
@@ -411,53 +437,9 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/26",
               "product": {
                 "id": "gid://shopify/Product/26",
-                "inAnyCollection": true
-              }
-            }
-          },
-          {
-            "id": "gid://shopify/CartLine/27",
-            "quantity": 1,
-            "cost": {
-              "amountPerQuantity": {
-                "amount": "10.00"
-              }
-            },
-            "merchandise": {
-              "product": {
-                "id": "gid://shopify/Product/27",
-                "inAnyCollection": true
-              }
-            }
-          },
-          {
-            "id": "gid://shopify/CartLine/28",
-            "quantity": 1,
-            "cost": {
-              "amountPerQuantity": {
-                "amount": "10.00"
-              }
-            },
-            "merchandise": {
-              "product": {
-                "id": "gid://shopify/Product/28",
-                "inAnyCollection": true
-              }
-            }
-          },
-          {
-            "id": "gid://shopify/CartLine/29",
-            "quantity": 1,
-            "cost": {
-              "amountPerQuantity": {
-                "amount": "10.00"
-              }
-            },
-            "merchandise": {
-              "product": {
-                "id": "gid://shopify/Product/29",
                 "inAnyCollection": true
               }
             }

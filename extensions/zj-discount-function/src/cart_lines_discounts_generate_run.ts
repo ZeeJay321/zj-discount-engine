@@ -1,6 +1,15 @@
-import { discountClassFor, evaluateRule, MAX_CART_LINES, parseMetafieldPayload, targetOf } from "@zj/discount-core";
+import { discountClassFor, evaluateRule, maxCartLinesFor, parseMetafieldPayload, targetOf } from "@zj/discount-core";
 import type { CartInput, CartLinesDiscountsGenerateRunResult } from "../generated/api";
-import { toCoreCart, toCoreOrderCart, toOrderOperations, toProductOperations, type LinesInputLike } from "./adapter";
+import {
+  bundleFilter,
+  targetFilter,
+  toCoreCart,
+  toCoreOrderCart,
+  toOrderOperations,
+  toProductOperations,
+  type LineFilter,
+  type LinesInputLike,
+} from "./adapter";
 
 const NONE: CartLinesDiscountsGenerateRunResult = { operations: [] };
 
@@ -8,7 +17,8 @@ const NONE: CartLinesDiscountsGenerateRunResult = { operations: [] };
  * Lines/order target. Parses the rule from the discount metafield once, runs the
  * shared core evaluator, and maps the result to Shopify operations.
  * - Dates are NOT checked here: Shopify only runs this while the discount is active.
- * - Product rules (amount off, buy X get Y): carts above MAX_CART_LINES get no
+ * - Product rules (amount off, buy X get Y, bundles): carts above the rule type's
+ *   measured cap (maxCartLinesFor) get no
  *   discount at all (instruction budget).
  * - Order rules (tiered spend): only the cart subtotal is used; no cart-size cap
  *   (measured well under the limit even at 200 lines; see README).
@@ -29,9 +39,16 @@ export function cartLinesDiscountsGenerateRun(input: CartInput): CartLinesDiscou
   }
 
   const lineCount = view.cart.lines.length;
-  if (lineCount === 0 || lineCount > MAX_CART_LINES) return NONE;
-  const target = targetOf(payload.config);
-  if (target === null) return NONE;
-  const result = evaluateRule(payload, toCoreCart(view, target, payload.collectionIds), ctx);
+  if (lineCount === 0 || lineCount > (maxCartLinesFor(payload.config.type) ?? Infinity)) return NONE;
+  const config = payload.config;
+  let keep: LineFilter;
+  if (config.type === "BUNDLE") keep = bundleFilter(config.components);
+  else {
+    const target = targetOf(config);
+    if (target === null) return NONE;
+    keep = targetFilter(target);
+  }
+  const cart = toCoreCart(view, keep, payload.collectionIds);
+  const result = evaluateRule(payload, cart, ctx);
   return { operations: toProductOperations(result) } as unknown as CartLinesDiscountsGenerateRunResult;
 }

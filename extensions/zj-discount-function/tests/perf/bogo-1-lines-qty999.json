@@ -21,6 +21,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000000000000",
               "product": {
                 "id": "gid://shopify/Product/8000000000000",
                 "inAnyCollection": true

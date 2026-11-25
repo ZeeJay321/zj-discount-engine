@@ -1,0 +1,408 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "100.00",
+            "currencyCode": "USD"
+          }
+        },
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "30.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/1",
+              "product": {
+                "id": "gid://shopify/Product/1",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/2",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "50.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/2",
+              "product": {
+                "id": "gid://shopify/Product/2",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/100",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/100",
+              "product": {
+                "id": "gid://shopify/Product/900",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/101",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/101",
+              "product": {
+                "id": "gid://shopify/Product/901",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/102",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/102",
+              "product": {
+                "id": "gid://shopify/Product/902",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/103",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/103",
+              "product": {
+                "id": "gid://shopify/Product/903",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/104",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/104",
+              "product": {
+                "id": "gid://shopify/Product/904",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/105",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/105",
+              "product": {
+                "id": "gid://shopify/Product/905",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/106",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/106",
+              "product": {
+                "id": "gid://shopify/Product/906",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/107",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/107",
+              "product": {
+                "id": "gid://shopify/Product/907",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/108",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/108",
+              "product": {
+                "id": "gid://shopify/Product/908",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/109",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/109",
+              "product": {
+                "id": "gid://shopify/Product/909",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/110",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/110",
+              "product": {
+                "id": "gid://shopify/Product/910",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/111",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/111",
+              "product": {
+                "id": "gid://shopify/Product/911",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/112",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/112",
+              "product": {
+                "id": "gid://shopify/Product/912",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/113",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/113",
+              "product": {
+                "id": "gid://shopify/Product/913",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/114",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/114",
+              "product": {
+                "id": "gid://shopify/Product/914",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/115",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/115",
+              "product": {
+                "id": "gid://shopify/Product/915",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/116",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/116",
+              "product": {
+                "id": "gid://shopify/Product/916",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/117",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/117",
+              "product": {
+                "id": "gid://shopify/Product/917",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/118",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/118",
+              "product": {
+                "id": "gid://shopify/Product/918",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/119",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "1.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/119",
+              "product": {
+                "id": "gid://shopify/Product/919",
+                "inAnyCollection": true
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 4,
+            "ruleId": "bundle_1",
+            "title": "Shirt + Jeans",
+            "collectionIds": [],
+            "config": {
+              "type": "BUNDLE",
+              "currencyCode": "USD",
+              "components": [
+                {
+                  "kind": "PRODUCT",
+                  "productId": "gid://shopify/Product/1",
+                  "quantity": 1
+                },
+                {
+                  "kind": "PRODUCT",
+                  "productId": "gid://shopify/Product/2",
+                  "quantity": 1
+                }
+              ],
+              "value": {
+                "kind": "PERCENTAGE",
+                "percent": 20
+              },
+              "limitPerOrder": 3
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "operations": []
+    }
+  }
+}

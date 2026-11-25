@@ -3,8 +3,8 @@ import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "re
 import { useFetcher, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppLink, useAppNavigate } from "../components/AppLink";
-import { collectionIdsOf, MAX_CART_LINES, productIdsOf } from "@zj/discount-core";
-import { describeValue, formatDay, RULE_TYPE_LABELS } from "../lib/rule-display";
+import { MAX_CART_LINES_BY_TYPE, resourceIdsOf } from "@zj/discount-core";
+import { describeTiers, describeValue, formatDay, RULE_TYPE_LABELS } from "../lib/rule-display";
 import { appContext } from "../services/app-context.server";
 import { quotaSummary } from "../services/discount-quota.server";
 import { deleteRule, reconcile, retrySync, revertToSynced, setEnabled } from "../services/discount-sync.server";
@@ -25,7 +25,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   } catch (err) {
     console.warn("[public-offers] publish failed:", err instanceof Error ? err.message : String(err));
   }
-  const ids = [...new Set(rules.flatMap((r) => [...collectionIdsOf(r.config), ...productIdsOf(r.config)]))].slice(0, 250);
+  const ids = [...new Set(rules.flatMap((r) => resourceIdsOf(r.config)))].slice(0, 250);
   let titles: Record<string, string> = {};
   try {
     titles = await getResourceTitles(gql, ids);
@@ -39,11 +39,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       id: r.id,
       title: r.title,
       type: RULE_TYPE_LABELS[r.config.type],
-      value: describeValue(r.config),
+      // One line per tier for tiered spend; one line otherwise.
+      valueLines: r.config.type === "TIERED_SPEND" ? describeTiers(r.config) : [describeValue(r.config, titles)],
       appliesTo:
         r.config.type === "TIERED_SPEND"
           ? "Whole order"
-          : [...collectionIdsOf(r.config), ...productIdsOf(r.config)].map((id) => titles[id] ?? id).join(", "),
+          : resourceIdsOf(r.config)
+              .map((id) => titles[id] ?? id)
+              .join(r.config.type === "BUNDLE" ? " + " : ", "),
       starts: formatDay(r.startsAt, store.timezone),
       ends: formatDay(r.endsAt, store.timezone),
       priority: r.priority,
@@ -131,7 +134,8 @@ export default function RulesIndex() {
           <s-text color="subdued">
             Plan: {store.planName}
             {store.isDevelopment ? " (development store)" : store.isPlus ? " (Shopify Plus)" : ""} · Currency {store.currencyCode} · Rules apply to
-            carts of up to {MAX_CART_LINES} lines (amount-off and buy X get Y; tiered spend has no limit).
+            carts of up to {MAX_CART_LINES_BY_TYPE.AMOUNT_OFF_PRODUCTS} lines (amount off), {MAX_CART_LINES_BY_TYPE.BUY_X_GET_Y}{" "}
+            (buy X get Y) or {MAX_CART_LINES_BY_TYPE.BUNDLE} (bundles); tiered spend has no limit.
           </s-text>
         </s-stack>
       </s-section>
@@ -145,10 +149,7 @@ export default function RulesIndex() {
           <s-table>
             <s-table-header-row>
               <s-table-header>Rule</s-table-header>
-              <s-table-header>Type</s-table-header>
               <s-table-header>Applies to</s-table-header>
-              <s-table-header>Dates</s-table-header>
-              <s-table-header>Priority</s-table-header>
               <s-table-header>Status</s-table-header>
               <s-table-header>Actions</s-table-header>
             </s-table-header-row>
@@ -158,26 +159,31 @@ export default function RulesIndex() {
                   <s-table-cell>
                     <s-stack direction="block" gap="small-300">
                       <AppLink to={`/app/rules/${r.id}`}>{r.title}</AppLink>
-                      <s-text color="subdued">{r.value}</s-text>
+                      <s-text color="subdued">
+                        {r.type} · Priority {r.priority}
+                      </s-text>
+                      {r.valueLines.map((line, i) => (
+                        <s-text key={i}>{line}</s-text>
+                      ))}
                     </s-stack>
                   </s-table-cell>
-                  <s-table-cell>{r.type}</s-table-cell>
-                  <s-table-cell>{r.appliesTo}</s-table-cell>
-                  <s-table-cell>
-                    {r.starts} → {r.ends}
-                  </s-table-cell>
-                  <s-table-cell>{r.priority}</s-table-cell>
                   <s-table-cell>
                     <s-stack direction="block" gap="small-300">
-                      <s-stack direction="inline" gap="small-300">
-                        <s-badge tone={r.enabled ? "success" : "neutral"}>{r.enabled ? "Enabled" : "Disabled"}</s-badge>
-                        <s-badge tone={BADGE[r.syncStatus].tone}>{BADGE[r.syncStatus].label}</s-badge>
-                      </s-stack>
+                      <s-text>{r.appliesTo}</s-text>
+                      <s-text color="subdued">
+                        {r.starts} → {r.ends}
+                      </s-text>
+                    </s-stack>
+                  </s-table-cell>
+                  <s-table-cell>
+                    <s-stack direction="block" gap="small-300">
+                      <s-badge tone={r.enabled ? "success" : "neutral"}>{r.enabled ? "Enabled" : "Disabled"}</s-badge>
+                      <s-badge tone={BADGE[r.syncStatus].tone}>{BADGE[r.syncStatus].label}</s-badge>
                       {r.syncError && <s-text tone="critical">{r.syncError}</s-text>}
                     </s-stack>
                   </s-table-cell>
                   <s-table-cell>
-                    <s-stack direction="inline" gap="small-300">
+                    <s-stack direction="block" gap="small-300">
                       {confirmDelete === r.id ? (
                         <>
                           <s-button tone="critical" variant="primary" onClick={() => { act("delete", r.id); setConfirmDelete(null); }}>
@@ -189,7 +195,15 @@ export default function RulesIndex() {
                         </>
                       ) : (
                         <>
-                          <s-button onClick={() => go(`/app/rules/${r.id}`)}>Edit</s-button>
+                          <s-stack direction="inline" gap="small-300">
+                            <s-button onClick={() => go(`/app/rules/${r.id}`)}>Edit</s-button>
+                            <s-button
+                              onClick={() => act(r.enabled ? "disable" : "enable", r.id)}
+                              {...(!r.enabled && atLimit ? { disabled: true } : {})}
+                            >
+                              {r.enabled ? "Disable" : "Enable"}
+                            </s-button>
+                          </s-stack>
                           {(r.syncStatus === "FAILED" || r.syncStatus === "DELETING") && (
                             <s-button onClick={() => act("retry", r.id)}>Retry</s-button>
                           )}
@@ -198,12 +212,6 @@ export default function RulesIndex() {
                               Revert
                             </s-button>
                           )}
-                          <s-button
-                            onClick={() => act(r.enabled ? "disable" : "enable", r.id)}
-                            {...(!r.enabled && atLimit ? { disabled: true } : {})}
-                          >
-                            {r.enabled ? "Disable" : "Enable"}
-                          </s-button>
                           <s-button tone="critical" variant="tertiary" onClick={() => setConfirmDelete(r.id)}>
                             Delete
                           </s-button>

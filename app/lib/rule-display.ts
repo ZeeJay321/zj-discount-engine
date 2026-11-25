@@ -1,4 +1,11 @@
-import { currencyExponent, type BuyXGetYConfig, type RuleConfig, type RuleType, type TieredSpendConfig } from "@zj/discount-core";
+import {
+  currencyExponent,
+  type BundleConfig,
+  type BuyXGetYConfig,
+  type RuleConfig,
+  type RuleType,
+  type TieredSpendConfig,
+} from "@zj/discount-core";
 
 export function formatMoneyMinor(minor: number, currency: string): string {
   const exp = currencyExponent(currency);
@@ -12,10 +19,36 @@ export function formatMoneyMinor(minor: number, currency: string): string {
 }
 
 export const RULE_TYPE_LABELS: Record<RuleType, string> = {
-  AMOUNT_OFF_PRODUCTS: "Amount off collections",
+  AMOUNT_OFF_PRODUCTS: "Amount off products",
   TIERED_SPEND: "Tiered spend",
   BUY_X_GET_Y: "Buy X get Y",
+  BUNDLE: "Bundle",
 };
+
+/**
+ * e.g. "Shirt + 2× Jeans + Belt: 20% off (up to 3 times per order)". `titles` maps
+ * product/variant GIDs to names; unknown ones show as "?" (incomplete drafts).
+ */
+export function describeBundle(c: BundleConfig, titles: Record<string, string> = {}): string {
+  const n = (v: number) => (Number.isFinite(v) ? String(v) : "?");
+  const items = c.components.map((comp) => {
+    const id = comp.kind === "VARIANT" ? comp.variantId : comp.productId;
+    const name = (id && titles[id]) || "?";
+    return comp.quantity === 1 ? name : `${n(comp.quantity)}× ${name}`;
+  });
+  const money = (m: number) => (Number.isSafeInteger(m) ? formatMoneyMinor(m, c.currencyCode) : "?");
+  const v = c.value;
+  const deal =
+    v.kind === "PERCENTAGE"
+      ? v.percent === 100
+        ? "free"
+        : `${Number.isFinite(v.percent) ? v.percent : "?"}% off`
+      : v.kind === "FIXED_AMOUNT"
+        ? `${money(v.amountMinor)} off each bundle`
+        : `bundle price ${money(v.priceMinor)}`;
+  const times = c.limitPerOrder === 1 ? "once per order" : `up to ${n(c.limitPerOrder)} times per order`;
+  return `${items.join(" + ")}: ${deal} (${times})`;
+}
 
 /** e.g. "Buy 2, get 1 free (up to 3 times per order)". Tolerates incomplete drafts (preview). */
 export function describeBuyXGetY(c: BuyXGetYConfig): string {
@@ -37,9 +70,10 @@ export function describeTiers(config: TieredSpendConfig): string[] {
   });
 }
 
-export function describeValue(config: RuleConfig): string {
+export function describeValue(config: RuleConfig, titles: Record<string, string> = {}): string {
   if (config.type === "TIERED_SPEND") return describeTiers(config).join(" · ");
   if (config.type === "BUY_X_GET_Y") return describeBuyXGetY(config);
+  if (config.type === "BUNDLE") return describeBundle(config, titles);
   const v = config.value;
   if (v.kind === "PERCENTAGE") return `${v.percent}% off`;
   return `${formatMoneyMinor(v.amountMinor, v.currencyCode)} off ${v.appliesToEachItem ? "each item" : "once per order"}`;

@@ -100,8 +100,42 @@ export interface BuyXGetYConfig {
   limitPerOrder: number;
 }
 
-/** Discriminated union; later rule types (bundle, free shipping) join here. */
-export type RuleConfig = AmountOffProductsConfig | TieredSpendConfig | BuyXGetYConfig;
+/** One bundle component: a whole product (any variant) or one specific variant, × quantity. */
+export type BundleComponent =
+  | { kind: "PRODUCT"; productId: string; quantity: number }
+  | {
+      kind: "VARIANT";
+      variantId: string;
+      /** The variant's product (used to reject a variant whose product is also a component). */
+      productId: string;
+      quantity: number;
+    };
+
+export type BundleValue =
+  | { kind: "PERCENTAGE"; percent: number }
+  /** Amount off each complete bundle, shop currency minor units. */
+  | { kind: "FIXED_AMOUNT"; amountMinor: number }
+  /** The price a complete bundle costs, shop currency minor units. */
+  | { kind: "FIXED_PRICE"; priceMinor: number };
+
+/**
+ * Bundle: one complete bundle = every component at its quantity. Complete bundles =
+ * min over components of floor(units / quantity), capped by `limitPerOrder`. Only
+ * units in complete bundles are discounted, cheapest first within each component.
+ */
+export interface BundleConfig {
+  type: "BUNDLE";
+  /** Shop base currency (ISO 4217) for fixed amounts and prices. */
+  currencyCode: string;
+  /** 2–5 components, no duplicates. */
+  components: BundleComponent[];
+  value: BundleValue;
+  /** Maximum complete bundles discounted per order (1–100). */
+  limitPerOrder: number;
+}
+
+/** Discriminated union; free shipping joins here next. */
+export type RuleConfig = AmountOffProductsConfig | TieredSpendConfig | BuyXGetYConfig | BundleConfig;
 export type RuleType = RuleConfig["type"];
 
 export interface CombinesWith {

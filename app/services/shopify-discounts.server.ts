@@ -106,6 +106,7 @@ const RESOURCE_TITLES = `#graphql
     nodes(ids: $ids) {
       ... on Collection { id title }
       ... on Product { id title }
+      ... on ProductVariant { id title product { title } }
     }
   }`;
 
@@ -185,8 +186,9 @@ export async function getShopInfo(gql: AdminGraphql): Promise<ShopInfo> {
 /** Titles of collections and products (rules' product sets), keyed by GID. */
 export async function getResourceTitles(gql: AdminGraphql, ids: string[]): Promise<Record<string, string>> {
   if (ids.length === 0) return {};
-  const data = await gql<{ nodes: Array<{ id?: string; title?: string } | null> }>(RESOURCE_TITLES, { ids });
+  const data = await gql<{ nodes: Array<{ id?: string; title?: string; product?: { title?: string } } | null> }>(RESOURCE_TITLES, { ids });
   const out: Record<string, string> = {};
-  for (const n of data.nodes) if (n?.id && n.title) out[n.id] = n.title;
+  // Variants read "Product — Variant"; collections and products their own title.
+  for (const n of data.nodes) if (n?.id && n.title) out[n.id] = n.product?.title ? `${n.product.title} — ${n.title}` : n.title;
   return out;
 }

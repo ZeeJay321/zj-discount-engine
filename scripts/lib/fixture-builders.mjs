@@ -7,9 +7,11 @@ import { fileURLToPath } from "node:url";
 
 export const C100 = "gid://shopify/Collection/100";
 
-export const MAX_CART_LINES = JSON.parse(
+/** Per-rule-type line caps (same JSON core reads). */
+export const CAPS = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "discount-core", "src", "limits.json"), "utf8"),
 ).maxCartLines;
+export const MIN_CAP = Math.min(...Object.values(CAPS));
 
 /** Amount-off-collection rule metafield (current schema v2). */
 export function metafield({ ruleId = "rule_1", title = "10% off Winter", collectionIds = [C100], value }) {
@@ -64,8 +66,9 @@ const decimalsOf = (s) => (String(s).includes(".") ? String(s).split(".")[1].len
 /** Real-length ids (36-char line UUIDs, 13-digit product ids) for instruction counting. */
 const realLineId = (n) => `gid://shopify/CartLine/${String(n).padStart(8, "0")}-4b1d-4c2e-9f3a-${String(n * 7919).padStart(12, "0")}`;
 const realProductId = (n) => `gid://shopify/Product/${8_000_000_000_000 + n * 1_000_003}`;
+const realVariantId = (n) => `gid://shopify/ProductVariant/${46_000_000_000_000 + n * 1_000_033}`;
 
-export function line(n, { quantity = 1, amount, unit, inCollection = true, productId, realistic = false } = {}) {
+export function line(n, { quantity = 1, amount, unit, inCollection = true, productId, variantId, realistic = false } = {}) {
   let unitStr = unit;
   if (unitStr === undefined) {
     const d = decimalsOf(amount);
@@ -77,6 +80,7 @@ export function line(n, { quantity = 1, amount, unit, inCollection = true, produ
     quantity,
     cost: { amountPerQuantity: { amount: unitStr } },
     merchandise: {
+      id: variantId ?? (realistic ? realVariantId(n) : `gid://shopify/ProductVariant/${n}`),
       product: { id: productId ?? (realistic ? realProductId(n) : `gid://shopify/Product/${n}`), inAnyCollection: inCollection },
     },
   };
@@ -151,5 +155,22 @@ export function bogoMetafield({ ruleId = "bogo_1", title = "Buy 2 get 1 free", t
       collectionIds: target.kind === "COLLECTIONS" ? target.collectionIds : [],
       config: { type: "BUY_X_GET_Y", target, buyQuantity, getQuantity, percent, limitPerOrder },
     },
+  };
+}
+
+/** Bundle rule metafield (schema v4). components: [{ kind, productId, variantId?, quantity }]. */
+export function bundleMetafield({
+  ruleId = "bundle_1",
+  title = "Shirt + Jeans",
+  currencyCode = "USD",
+  components = [
+    { kind: "PRODUCT", productId: "gid://shopify/Product/1", quantity: 1 },
+    { kind: "PRODUCT", productId: "gid://shopify/Product/2", quantity: 1 },
+  ],
+  value = { kind: "PERCENTAGE", percent: 20 },
+  limitPerOrder = 3,
+} = {}) {
+  return {
+    jsonValue: { schemaVersion: 4, ruleId, title, collectionIds: [], config: { type: "BUNDLE", currencyCode, components, value, limitPerOrder } },
   };
 }

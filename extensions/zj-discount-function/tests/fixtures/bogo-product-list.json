@@ -21,6 +21,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/1",
               "product": {
                 "id": "gid://shopify/Product/1",
                 "inAnyCollection": false
@@ -36,6 +37,7 @@
               }
             },
             "merchandise": {
+              "id": "gid://shopify/ProductVariant/2",
               "product": {
                 "id": "gid://shopify/Product/2",
                 "inAnyCollection": false

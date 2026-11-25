@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateRule, type AmountOffProductsConfig } from "@zj/discount-core";
-import { describeBuyXGetY, describeTiers, describeValue, RULE_TYPE_LABELS } from "./rule-display";
+import { describeBundle, describeBuyXGetY, describeTiers, describeValue, RULE_TYPE_LABELS } from "./rule-display";
 import { draftToFormValues, errorsByFormField, parseRuleForm, utcIsoToZonedDay, zonedDayToUtcIso } from "./rule-form";
 
 const ctx = { shopCurrency: "USD", timezone: "America/New_York" };
@@ -219,5 +219,84 @@ describe("buy X get Y form", () => {
     expect(describeBuyXGetY(d({ buyQuantity: "", bogoPercent: "" }))).toBe("Buy ?, get 1 at ?% off (up to 3 times per order)");
     expect(describeValue(d({}))).toBe("Buy 2, get 1 free (up to 3 times per order)");
     expect(RULE_TYPE_LABELS.BUY_X_GET_Y).toBe("Buy X get Y");
+  });
+});
+
+describe("bundle form", () => {
+  const P1 = "gid://shopify/Product/1";
+  const V2 = "gid://shopify/ProductVariant/22";
+  const bundleEntries = (o: Record<string, string> = {}, rows: Array<[string, string, string, string]> = [["PRODUCT", P1, P1, "1"], ["VARIANT", V2, "gid://shopify/Product/2", "2"]]): Array<[string, string]> => [
+    ["ruleType", "BUNDLE"],
+    ["title", "Shirt + Jeans"],
+    ["priority", "7"],
+    ...rows.flatMap(([k, id, pid, q]): Array<[string, string]> => [["componentKind", k], ["componentId", id], ["componentProductId", pid], ["componentQuantity", q]]),
+    ["bundleValueKind", o.kind ?? "PERCENTAGE"],
+    ["bundleValue", o.value ?? "20"],
+    ["limitPerOrder", o.limit ?? "3"],
+    ["startDate", "2026-12-01"],
+    ["combinesShipping", "on"],
+  ];
+
+  it("parses components (product and variant), percentage and limit; validates", () => {
+    const { draft, errors } = parseRuleForm(fd(bundleEntries()), ctx);
+    expect(errors).toEqual([]);
+    expect(draft.config).toEqual({
+      type: "BUNDLE",
+      currencyCode: "USD",
+      components: [
+        { kind: "PRODUCT", productId: P1, quantity: 1 },
+        { kind: "VARIANT", variantId: V2, productId: "gid://shopify/Product/2", quantity: 2 },
+      ],
+      value: { kind: "PERCENTAGE", percent: 20 },
+      limitPerOrder: 3,
+    });
+    expect(validateRule(draft)).toEqual([]);
+  });
+
+  it("parses fixed amount and fixed price in shop-currency minor units", () => {
+    expect(parseRuleForm(fd(bundleEntries({ kind: "FIXED_AMOUNT", value: "5.5" })), ctx).draft.config).toMatchObject({ value: { kind: "FIXED_AMOUNT", amountMinor: 550 } });
+    expect(parseRuleForm(fd(bundleEntries({ kind: "FIXED_PRICE", value: "50" })), ctx).draft.config).toMatchObject({ value: { kind: "FIXED_PRICE", priceMinor: 5000 } });
+    const bad = parseRuleForm(fd(bundleEntries({ kind: "FIXED_PRICE", value: "abc" })), ctx);
+    expect(bad.errors[0]).toMatchObject({ field: "config.value" });
+  });
+
+  it("maps component and value errors to their rows", () => {
+    const { draft } = parseRuleForm(fd(bundleEntries({ value: "0", limit: "0" }, [["PRODUCT", "", "", "11"], ["PRODUCT", P1, P1, "1"], ["PRODUCT", P1, P1, "1"]])), ctx);
+    expect(errorsByFormField(validateRule(draft))).toMatchObject({
+      "componentItem.0": "Choose a product.",
+      "componentQuantity.0": expect.any(String),
+      "componentItem.2": "This component is already in the bundle.",
+      bundleValue: expect.any(String),
+      limitPerOrder: expect.any(String),
+    });
+    const one = parseRuleForm(fd(bundleEntries({}, [["PRODUCT", P1, P1, "1"]])), ctx).draft;
+    expect(errorsByFormField(validateRule(one)).components).toMatch(/between 2 and 5/);
+  });
+
+  it("round-trips through draftToFormValues", () => {
+    const { draft } = parseRuleForm(fd(bundleEntries({ kind: "FIXED_PRICE", value: "49.99" })), ctx);
+    expect(draftToFormValues(draft, ctx)).toMatchObject({
+      ruleType: "BUNDLE",
+      bundleValueKind: "FIXED_PRICE",
+      bundleValue: "49.99",
+      limitPerOrder: "3",
+      components: [
+        { kind: "PRODUCT", id: P1, productId: P1, quantity: "1" },
+        { kind: "VARIANT", id: V2, productId: "gid://shopify/Product/2", quantity: "2" },
+      ],
+    });
+    // other types get two empty component rows
+    expect(draftToFormValues(parseRuleForm(fd(base), ctx).draft, ctx).components).toHaveLength(2);
+  });
+
+  it("previews the bundle with component names", () => {
+    const titles = { [P1]: "Shirt", [V2]: "Jeans — 32" };
+    const d = (o: Record<string, string>) => parseRuleForm(fd(bundleEntries(o)), ctx).draft.config as never;
+    expect(describeBundle(d({}), titles)).toBe("Shirt + 2× Jeans — 32: 20% off (up to 3 times per order)");
+    expect(describeBundle(d({ kind: "FIXED_AMOUNT", value: "10", limit: "1" }), titles)).toBe("Shirt + 2× Jeans — 32: $10.00 off each bundle (once per order)");
+    expect(describeBundle(d({ kind: "FIXED_PRICE", value: "50" }), titles)).toBe("Shirt + 2× Jeans — 32: bundle price $50.00 (up to 3 times per order)");
+    expect(describeBundle(d({ value: "100" }), {})).toBe("? + 2× ?: free (up to 3 times per order)");
+    expect(describeValue(d({}), titles)).toContain("Shirt");
+    expect(RULE_TYPE_LABELS.BUNDLE).toBe("Bundle");
   });
 });

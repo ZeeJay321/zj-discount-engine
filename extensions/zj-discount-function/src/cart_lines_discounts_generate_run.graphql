@@ -24,6 +24,7 @@ query CartInput($collectionIds: [ID!]) {
       }
       merchandise {
         ... on ProductVariant {
+          id
           product {
             id
             inAnyCollection(ids: $collectionIds)

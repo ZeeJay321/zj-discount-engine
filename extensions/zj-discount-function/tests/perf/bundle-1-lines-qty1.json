@@ -1,0 +1,70 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "20.00",
+            "currencyCode": "USD"
+          }
+        },
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/00000000-4b1d-4c2e-9f3a-000000000000",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "20.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/46000000000000",
+              "product": {
+                "id": "gid://shopify/Product/8000000000001",
+                "inAnyCollection": true
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 4,
+            "ruleId": "bundle_1",
+            "title": "Shirt + Jeans",
+            "collectionIds": [],
+            "config": {
+              "type": "BUNDLE",
+              "currencyCode": "USD",
+              "components": [
+                {
+                  "kind": "PRODUCT",
+                  "productId": "gid://shopify/Product/8000000000001",
+                  "quantity": 1
+                },
+                {
+                  "kind": "PRODUCT",
+                  "productId": "gid://shopify/Product/8000000000002",
+                  "quantity": 1
+                }
+              ],
+              "value": {
+                "kind": "FIXED_PRICE",
+                "priceMinor": 5000
+              },
+              "limitPerOrder": 100
+            }
+          }
+        }
+      }
+    },
+    "output": null
+  }
+}

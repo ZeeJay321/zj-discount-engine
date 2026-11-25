@@ -1,0 +1,143 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "40.00",
+            "currencyCode": "USD"
+          }
+        },
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "20.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/1",
+              "product": {
+                "id": "gid://shopify/Product/1",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/5",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "10.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/5",
+              "product": {
+                "id": "gid://shopify/Product/3",
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/6",
+            "quantity": 1,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "10.00"
+              }
+            },
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/31",
+              "product": {
+                "id": "gid://shopify/Product/3",
+                "inAnyCollection": true
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 4,
+            "ruleId": "bundle_1",
+            "title": "Shirt + Jeans",
+            "collectionIds": [],
+            "config": {
+              "type": "BUNDLE",
+              "currencyCode": "USD",
+              "components": [
+                {
+                  "kind": "PRODUCT",
+                  "productId": "gid://shopify/Product/1",
+                  "quantity": 1
+                },
+                {
+                  "kind": "VARIANT",
+                  "variantId": "gid://shopify/ProductVariant/31",
+                  "productId": "gid://shopify/Product/3",
+                  "quantity": 1
+                }
+              ],
+              "value": {
+                "kind": "PERCENTAGE",
+                "percent": 50
+              },
+              "limitPerOrder": 3
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "productDiscountsAdd": {
+            "candidates": [
+              {
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/1",
+                      "quantity": 1
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 10
+                  }
+                }
+              },
+              {
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/6",
+                      "quantity": 1
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 5
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "ALL"
+          }
+        }
+      ]
+    }
+  }
+}

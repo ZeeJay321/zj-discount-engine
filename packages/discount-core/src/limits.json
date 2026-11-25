@@ -1,3 +1,7 @@
 {
-  "maxCartLines": 29
+  "maxCartLines": {
+    "AMOUNT_OFF_PRODUCTS": 27,
+    "BUY_X_GET_Y": 26,
+    "BUNDLE": 21
+  }
 }

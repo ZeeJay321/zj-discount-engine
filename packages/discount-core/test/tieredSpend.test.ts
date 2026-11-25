@@ -1,6 +1,6 @@
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { cartSubtotalMinor, evaluateRule, MAX_CART_LINES, type Cart, type EvaluableRule, type TierValue } from "../src";
+import { cartSubtotalMinor, evaluateRule, MAX_CART_LINES_BY_TYPE, type Cart, type EvaluableRule, type TierValue } from "../src";
 import { hugeCart, loadCart } from "./helpers";
 
 const RATE1 = { presentmentCurrencyRate: "1.0" };
@@ -78,7 +78,7 @@ describe("tiered spend: empty, zero and line-based carts", () => {
     expect(evaluateRule(THREE, cart, RATE1).order?.tierIndex).toBe(1);
   });
   it("is NOT limited by the product-rule cart-line cap", () => {
-    const cart = hugeCart(MAX_CART_LINES + 200, 1, 1000);
+    const cart = hugeCart(Math.max(...Object.values(MAX_CART_LINES_BY_TYPE)) + 200, 1, 1000);
     const r = evaluateRule(THREE, cart, RATE1);
     expect(r.order?.tierIndex).toBe(2);
   });

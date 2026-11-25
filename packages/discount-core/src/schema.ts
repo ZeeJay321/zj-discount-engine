@@ -4,20 +4,32 @@
  * extension's input variables are taken from this metafield's top-level keys.
  */
 import { discountClassFor } from "./evaluate";
-import type { AmountOffValue, DiscountClass, ProductTarget, RuleConfig, RuleDraft, SpendTier, TierValue } from "./types";
+import type {
+  AmountOffValue,
+  BundleComponent,
+  BundleValue,
+  DiscountClass,
+  ProductTarget,
+  RuleConfig,
+  RuleDraft,
+  SpendTier,
+  TierValue,
+} from "./types";
 
 /**
  * v1: amount-off-products with collection targets.
  * v2: adds the TIERED_SPEND type (same top-level shape).
  * v3: adds BUY_X_GET_Y and PRODUCTS (product-list) targets.
+ * v4: adds BUNDLE.
  * Readers accept both; writers always write the current version. Discounts saved
  * with v1 keep working until they are next edited.
  */
-export const RULE_CONFIG_SCHEMA_VERSION = 3;
-export const SUPPORTED_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3];
+export const RULE_CONFIG_SCHEMA_VERSION = 4;
+export const SUPPORTED_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3, 4];
 
 /** Oldest schema version that can describe this config (older payloads can't contain it). */
 export function minSchemaVersion(config: RuleConfig): number {
+  if (config.type === "BUNDLE") return 4;
   if (config.type === "BUY_X_GET_Y") return 3;
   if (config.type === "AMOUNT_OFF_PRODUCTS" && config.target.kind === "PRODUCTS") return 3;
   if (config.type === "TIERED_SPEND") return 2;
@@ -47,7 +59,13 @@ export function toMetafieldPayload(rule: { id: string; title: string; config: Ru
 
 /** The rule's product set, if it has one (amount-off and buy X get Y). */
 export function targetOf(config: RuleConfig): ProductTarget | null {
-  return config.type === "TIERED_SPEND" ? null : config.target;
+  return config.type === "AMOUNT_OFF_PRODUCTS" || config.type === "BUY_X_GET_Y" ? config.target : null;
+}
+
+/** Every product/variant/collection GID a rule refers to (for showing titles). */
+export function resourceIdsOf(config: RuleConfig): string[] {
+  if (config.type === "BUNDLE") return config.components.map((c) => (c.kind === "VARIANT" ? c.variantId : c.productId));
+  return [...collectionIdsOf(config), ...productIdsOf(config)];
 }
 
 export function collectionIdsOf(config: RuleConfig): string[] {
@@ -98,6 +116,7 @@ export function parseConfig(c: unknown): ParseResult<RuleConfig> {
   if (!isObj(c)) return { ok: false, error: "config is not an object" };
   if (c.type === "TIERED_SPEND") return parseTiered(c);
   if (c.type === "BUY_X_GET_Y") return parseBuyXGetY(c);
+  if (c.type === "BUNDLE") return parseBundle(c);
   if (c.type !== "AMOUNT_OFF_PRODUCTS") return { ok: false, error: "unknown rule type" };
   const target = parseTarget(c.target);
   if (!target.ok) return target;
@@ -182,4 +201,27 @@ function parseTiered(c: Record<string, unknown>): ParseResult<RuleConfig> {
     tiers.push({ thresholdMinor: t.thresholdMinor, value });
   }
   return { ok: true, value: { type: "TIERED_SPEND", currencyCode: c.currencyCode, tiers } };
+}
+
+function parseBundle(c: Record<string, unknown>): ParseResult<RuleConfig> {
+  if (typeof c.currencyCode !== "string") return { ok: false, error: "currencyCode missing" };
+  if (!Array.isArray(c.components) || c.components.length === 0) return { ok: false, error: "components missing" };
+  const components: BundleComponent[] = [];
+  for (const raw of c.components as unknown[]) {
+    if (!isObj(raw) || !isNum(raw.quantity) || typeof raw.productId !== "string") return { ok: false, error: "invalid component" };
+    if (raw.kind === "PRODUCT") components.push({ kind: "PRODUCT", productId: raw.productId, quantity: raw.quantity });
+    else if (raw.kind === "VARIANT" && typeof raw.variantId === "string")
+      components.push({ kind: "VARIANT", variantId: raw.variantId, productId: raw.productId, quantity: raw.quantity });
+    else return { ok: false, error: "invalid component" };
+  }
+  const v = c.value;
+  let value: BundleValue;
+  if (isObj(v) && v.kind === "PERCENTAGE" && isNum(v.percent)) value = { kind: "PERCENTAGE", percent: v.percent };
+  else if (isObj(v) && v.kind === "FIXED_AMOUNT" && isNum(v.amountMinor) && Number.isSafeInteger(v.amountMinor))
+    value = { kind: "FIXED_AMOUNT", amountMinor: v.amountMinor };
+  else if (isObj(v) && v.kind === "FIXED_PRICE" && isNum(v.priceMinor) && Number.isSafeInteger(v.priceMinor))
+    value = { kind: "FIXED_PRICE", priceMinor: v.priceMinor };
+  else return { ok: false, error: "invalid bundle value" };
+  if (!isNum(c.limitPerOrder)) return { ok: false, error: "limitPerOrder missing" };
+  return { ok: true, value: { type: "BUNDLE", currencyCode: c.currencyCode, components, value, limitPerOrder: c.limitPerOrder } };
 }

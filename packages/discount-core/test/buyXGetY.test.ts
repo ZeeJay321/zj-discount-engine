@@ -1,7 +1,9 @@
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { evaluateRule, MAX_CART_LINES, type BuyXGetYConfig, type Cart, type CartLine, type EvaluableRule } from "../src";
+import { evaluateRule, MAX_CART_LINES_BY_TYPE, type BuyXGetYConfig, type Cart, type CartLine, type EvaluableRule } from "../src";
 import { C100 } from "./helpers";
+
+const MAX_CART_LINES = MAX_CART_LINES_BY_TYPE.BUY_X_GET_Y;
 
 const RATE1 = { presentmentCurrencyRate: "1.0" };
 

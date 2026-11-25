@@ -6,15 +6,16 @@ saved as an **automatic app discount**, with the rule's configuration stored in 
 metafield on that discount. The Function reads the metafield through its input query
 and applies the discount at checkout.
 
-**Status:** three rule types work end to end:
+**Status:** four rule types work end to end:
 
 | Rule type | Discount class | What it does |
 |---|---|---|
 | Amount off | PRODUCT | percentage or fixed amount off items in chosen collections or a product list |
 | Tiered spend | ORDER | 2–5 spend thresholds; the highest tier the cart subtotal reaches applies to the whole order |
 | Buy X get Y | PRODUCT | every X + Y units from the product set earns Y units at a percentage off (100% = free); the cheapest units are discounted |
+| Bundle | PRODUCT | 2–5 components (a product or a specific variant, × quantity); complete bundles get a percentage off, a fixed amount off or a fixed bundle price |
 
-Bundles, free shipping and the simulator are next.
+Free shipping and the simulator are next.
 
 ## Layout
 
@@ -96,8 +97,8 @@ Locally, Prisma uses the template's SQLite file (`prisma/dev.sqlite`).
 
 ### A rule's type is fixed after creation
 
-Each rule type maps to a Shopify discount class (amount off → PRODUCT, buy X get Y →
-PRODUCT, tiered spend → ORDER), and Shopify can't change the class of an existing
+Each rule type maps to a Shopify discount class (amount off, buy X get Y and bundles →
+PRODUCT; tiered spend → ORDER), and Shopify can't change the class of an existing
 discount.
 So the edit form shows the type as read-only, and the server rejects a type change.
 To switch type, create a new rule and delete the old one.
@@ -155,6 +156,41 @@ products.
   same-priority, overlapping-dates check applies, as for every rule type.
 - Subject to the cart-line cap below.
 
+### Bundles
+
+- A bundle has **2–5 components**. Each component is a whole product (any of its
+  variants) or one specific variant, picked with the product picker, plus a quantity
+  from 1 to 10.
+- A **complete bundle** is one of every component at its quantity. The number of
+  complete bundles is the minimum, over components, of floor(units / quantity), capped
+  by the **limit per order** (1–100).
+- **Only units in complete bundles are discounted.** Within a component the
+  **cheapest** units are used first (ties go to the earlier cart line). Quantities are
+  never expanded: units are taken from sorted lines by count.
+- **Discount kinds,** one per rule:
+  - percentage off the bundle's units: round-half-up(unit × percent) per unit
+  - fixed amount off each bundle: min(amount, bundle total)
+  - fixed bundle price: clamp(bundle total − price, 0, total). A price above the
+    total gives no discount, never a negative one.
+- **Splitting the discount:** for the two fixed kinds, each bundle's discount is spread
+  over its lines with the largest-remainder allocation, so the parts add up exactly.
+  Bundles can differ in price when a component has lines at different prices.
+- **Repeated bundles:** consecutive identical bundles are computed once and
+  multiplied, so a limit of 100 with large quantities stays cheap. The work is bounded
+  by the number of lines, not by the limit.
+- **Partial lines:** as with buy X get Y, the Function sends `cartLine { id, quantity }`
+  with a fixed amount for exactly the units each line puts into bundles, so checkout
+  matches the app's calculation to the minor unit.
+- **Validation:**
+  - 2–5 components, no duplicates
+  - no variant whose product is also a whole-product component (a unit would count
+    twice)
+  - quantity 1–10, limit 1–100
+  - percentage above 0 and at most 100; fixed amount or price above 0
+  - the same-priority, overlapping-dates check, which covers bundles that share a
+    component
+- The Function reads each line's **variant ID** for variant components.
+
 ### Metafield schema versions
 
 The rule-config metafield has a `schemaVersion`.
@@ -162,9 +198,10 @@ The rule-config metafield has a `schemaVersion`.
 - **v1:** amount off collections only.
 - **v2:** adds the tiered type.
 - **v3:** adds buy X get Y and product-list targets.
+- **v4:** adds bundles.
 
 The Function reads every version, so older discounts keep working until they're next
-edited, and saving always writes v3. A payload is rejected if its version is too old
+edited, and saving always writes v4. A payload is rejected if its version is too old
 to contain its rule (for example, buy X get Y in a v2 payload).
 
 ### Opening rules from Shopify admin
@@ -193,15 +230,43 @@ test compares like with like: the same input through the Wasm and through
   Priority can't be enforced across separate discounts at checkout: Shopify combines
   discounts according to each discount's combination settings.
 
-## The cart-line cap (`MAX_CART_LINES = 29`, product rules only)
+## Cart-line caps (per product rule type)
 
 Shopify stops a Function at **11M instructions** for carts up to 200 lines (the limit
 scales up linearly beyond that). The JavaScript Function costs about 1M instructions to
 start, plus a per-line cost that is dominated by reading Shopify's input and writing
 the output inside the Wasm JavaScript interpreter.
 
-Measured with `scripts/function-perf.mjs` (15% off; the cap row is the worst case of 15% off and a fixed
-amount once per order, with every line eligible):
+Each product rule type has its own measured cap: the largest worst-case cart at or
+below 50% of the limit, with real-length IDs (36-character cart line UUIDs, 13-digit
+product and variant IDs).
+
+| Rule type | Worst case measured | Cap | At the cap |
+|---|---|---|---|
+| Amount off | every line eligible, fixed amount once per order | **27** | 5,444,744 (49.5%) |
+| Buy X get Y | buy 1 get N−1 on N single-unit lines, so almost every line is discounted | **26** | 5,452,768 (49.6%) |
+| Bundle | fixed bundle price, every line in a component, limit 100 | **21** | 5,359,444 (48.7%) |
+| Tiered spend | not capped | – | – |
+
+The caps live in `packages/discount-core/src/limits.json` and are read by core
+(`MAX_CART_LINES_BY_TYPE`, `maxCartLinesFor(type)`), the Function, the scripts and the
+UI. **Above its cap, a rule gives no discount at all, never a partial one.** CI fails if
+a cart at a cap goes over 55%.
+
+To re-measure:
+1. Raise every cap above 200.
+2. Rebuild the Function.
+3. Run `node scripts/function-perf.mjs --sweep`, which refuses to run otherwise.
+4. Put the reported values back.
+
+**History:**
+- The cap started as one value of 30, from a sweep that measured 33.
+- Buy X get Y added product IDs (29).
+- Bundles added variant IDs. One shared cap would then have been 21 for every product
+  rule, so the cap is now set per type.
+
+Optimising the original JavaScript Function (15% off; earlier measurements with short
+IDs):
 
 | Cart | Before optimising | After optimising |
 |---|---|---|
@@ -209,36 +274,18 @@ amount once per order, with every line eligible):
 | 250 lines × 999 qty | 32,698,200 (238%) | 22,057,574 (160%) |
 | 200 lines, input parsing only | 9,229,852 (84%) | 6,446,560 (59%) |
 | 1 line | 1,011,231 (9%) | 1,020,313 (9%) |
-| **29 lines, all eligible (cap), fixed once** | n/a | **5,356,270 (48.7%)** |
 
-**History of the cap:**
-- It started at 30, from a sweep that measured 33.
-- Buy X get Y added product-list matching, so every line now carries its product ID.
-  The perf fixtures and the sweep also switched to **real-length IDs** (36-character
-  cart line UUIDs and 13-digit product IDs), because parsing cost depends on string
-  length.
-- With both changes, the worst case (amount off, fixed amount once per order, every
-  line eligible) measures 5,356,260 at 29 lines and 5,507,320 at 30 (50.07%). So the
-  cap is now **29**.
-
-The value lives in `packages/discount-core/src/limits.json` and is exported as
-`MAX_CART_LINES`. To re-measure:
-1. Raise `maxCartLines` above 200.
-2. Rebuild the Function.
-3. Run `node scripts/function-perf.mjs --sweep`, which refuses to run otherwise.
-
-Buy X get Y instruction counts (distinct prices, real-length IDs):
+Bundle instruction counts (fixed bundle price, limit 100, real-length IDs):
 
 | Lines | Quantity 1 | Quantity 999 |
 |---|---|---|
-| 1 | 1,173,574 (10.7%) | 1,293,405 (11.8%) |
-| 15 | 2,866,181 (26.1%) | 2,619,383 (23.8%) |
-| **29 (cap)** | 4,418,226 (40.2%) | 3,941,512 (35.8%) |
-| 30 (above the cap: no discount) | 1,994,040 (18.1%) | 2,005,245 (18.2%) |
-| 31 (above the cap: no discount) | 2,026,555 (18.4%) | 2,038,043 (18.5%) |
+| 1 | 1,499,712 (13.6%) | 1,499,851 (13.6%) |
+| 15 | 4,216,287 (38.3%) | 3,144,335 (28.6%) |
+| **21 (cap)** | 5,359,444 (48.7%) | 3,783,990 (34.4%) |
+| 30 (above the cap: no discount) | 2,360,979 (21.5%) | 2,366,285 (21.5%) |
+| 31 (above the cap: no discount) | 2,396,656 (21.8%) | 2,402,060 (21.8%) |
 
-The cap applies to the **product rules** (amount off, buy X get Y). **Tiered spend has
-no cart-size problem**, so it isn't capped.
+**Tiered spend has no cart-size problem**, so it isn't capped.
 
 - It only uses the cart subtotal. Shopify doesn't allow directives (`@include` /
   `@skip`) in Function input queries ("Directives are not allowed in input queries"),
@@ -250,7 +297,7 @@ no cart-size problem**, so it isn't capped.
 - If tiered spend ever needed to be cheaper, the fix would be a second Function whose
   query asks only for the subtotal.
 
-**Above the cap, a product rule gives no discount at all, never a partial one.** The Function
+**Above its cap, a product rule gives no discount at all, never a partial one.** The Function
 checks the raw line count first and returns no operations; core's `evaluateRule` does
 the same, so the simulator agrees. A cart above the cap still costs about 70% of the
 limit just to read, so large carts never fail; they simply get no discount. The cap is
@@ -258,8 +305,8 @@ shown in the rule form and on the rules page. CI fails if a cart at the cap goes
 55%.
 
 Optimisations already made:
-- the input query only asks for line id, quantity, unit price, product id and
-  `inAnyCollection`
+- the input query only asks for line id, quantity, unit price, variant id, product id
+  and `inAnyCollection`
 - the currency is read once per cart
 - the metafield is parsed once
 - lines outside the product set are skipped before any parsing

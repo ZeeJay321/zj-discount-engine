@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { discountClassesFor, parseConfig, parseMetafieldPayload, toMetafieldPayload, type AmountOffProductsConfig } from "../src";
+import { discountClassesFor, parseConfig, parseMetafieldPayload, RULE_CONFIG_SCHEMA_VERSION, toMetafieldPayload, type AmountOffProductsConfig } from "../src";
 import { C100, C200, fixed, pct, rule } from "./helpers";
 
 describe("metafield payload", () => {
@@ -7,7 +7,7 @@ describe("metafield payload", () => {
     const r = rule(pct(10), [C100, C200]);
     const payload = toMetafieldPayload({ id: "rule_1", title: "Ten off", config: r.config });
     expect(payload.collectionIds).toEqual([C100, C200]);
-    expect(payload.schemaVersion).toBe(3);
+    expect(payload.schemaVersion).toBe(RULE_CONFIG_SCHEMA_VERSION);
     const parsed = parseMetafieldPayload(JSON.parse(JSON.stringify(payload)));
     expect(parsed).toEqual({ ok: true, value: payload });
   });
@@ -30,7 +30,7 @@ describe("metafield payload", () => {
   it.each([
     ["null", null],
     ["array", []],
-    ["unknown version", { ...good, schemaVersion: 4 }],
+    ["unknown version", { ...good, schemaVersion: 99 }],
     ["missing ruleId", { ...good, ruleId: undefined }],
     ["missing title", { ...good, title: 5 }],
     ["missing collectionIds", { ...good, collectionIds: "x" }],
@@ -66,7 +66,7 @@ describe("schema versions", () => {
     const tiered = { type: "TIERED_SPEND", currencyCode: "USD", tiers: [{ thresholdMinor: 100, value: { kind: "PERCENTAGE", percent: 5 } }] };
     expect(parseMetafieldPayload({ ...v1, config: tiered }).ok).toBe(false);
   });
-  it("writes the current version (v3) with no collections for tiered spend", () => {
+  it("writes the current version with no collections for tiered spend", () => {
     const config = {
       type: "TIERED_SPEND" as const,
       currencyCode: "USD",
@@ -76,7 +76,7 @@ describe("schema versions", () => {
       ],
     };
     const payload = toMetafieldPayload({ id: "t", title: "Tiers", config });
-    expect(payload).toMatchObject({ schemaVersion: 3, collectionIds: [] });
+    expect(payload).toMatchObject({ schemaVersion: RULE_CONFIG_SCHEMA_VERSION, collectionIds: [] });
     expect(parseMetafieldPayload(JSON.parse(JSON.stringify(payload)))).toEqual({ ok: true, value: payload });
     expect(discountClassesFor({ config })).toEqual(["ORDER"]);
   });
@@ -117,7 +117,7 @@ describe("schema v3: buy X get Y and product targets", () => {
   };
   it("round-trips a BOGO rule with a product-list target (no collection variable)", () => {
     const payload = toMetafieldPayload({ id: "b", title: "B2G1", config: bogo });
-    expect(payload).toMatchObject({ schemaVersion: 3, collectionIds: [] });
+    expect(payload).toMatchObject({ schemaVersion: RULE_CONFIG_SCHEMA_VERSION, collectionIds: [] });
     expect(parseMetafieldPayload(JSON.parse(JSON.stringify(payload)))).toEqual({ ok: true, value: payload });
     expect(discountClassesFor({ config: bogo })).toEqual(["PRODUCT"]);
   });
@@ -160,5 +160,55 @@ describe("target helpers", () => {
     const tiered = { type: "TIERED_SPEND" as const, currencyCode: "USD", tiers: [] };
     expect(targetOf(tiered)).toBeNull();
     expect(productIdsOf(tiered)).toEqual([]);
+  });
+});
+
+describe("schema v4: bundles", () => {
+  const bundle = {
+    type: "BUNDLE" as const,
+    currencyCode: "USD",
+    components: [
+      { kind: "PRODUCT" as const, productId: "gid://shopify/Product/1", quantity: 1 },
+      { kind: "VARIANT" as const, variantId: "gid://shopify/ProductVariant/22", productId: "gid://shopify/Product/2", quantity: 2 },
+    ],
+    value: { kind: "FIXED_PRICE" as const, priceMinor: 5000 },
+    limitPerOrder: 3,
+  };
+  it("round-trips a bundle (v4, PRODUCT class, no collection variable)", () => {
+    const payload = toMetafieldPayload({ id: "b", title: "Kit", config: bundle });
+    expect(payload).toMatchObject({ schemaVersion: 4, collectionIds: [] });
+    expect(parseMetafieldPayload(JSON.parse(JSON.stringify(payload)))).toEqual({ ok: true, value: payload });
+    expect(discountClassesFor({ config: bundle })).toEqual(["PRODUCT"]);
+  });
+  it.each([
+    ["percentage", { kind: "PERCENTAGE", percent: 20 }],
+    ["fixed amount", { kind: "FIXED_AMOUNT", amountMinor: 500 }],
+  ])("round-trips the %s kind", (_n, value) => {
+    const payload = toMetafieldPayload({ id: "b", title: "Kit", config: { ...bundle, value } as never });
+    expect(parseMetafieldPayload(payload).ok).toBe(true);
+  });
+  it("rejects a bundle inside a v3 payload", () => {
+    expect(parseMetafieldPayload({ schemaVersion: 3, ruleId: "r", title: "t", collectionIds: [], config: bundle }).ok).toBe(false);
+  });
+  it("still reads v3 buy X get Y payloads", () => {
+    const config = { type: "BUY_X_GET_Y", target: { kind: "PRODUCTS", productIds: ["gid://shopify/Product/1"] }, buyQuantity: 1, getQuantity: 1, percent: 50, limitPerOrder: 1 };
+    expect(parseMetafieldPayload({ schemaVersion: 3, ruleId: "r", title: "t", collectionIds: [], config }).ok).toBe(true);
+  });
+  it.each([
+    ["no currency", { ...bundle, currencyCode: undefined }],
+    ["no components", { ...bundle, components: [] }],
+    ["component not an object", { ...bundle, components: [null] }],
+    ["component without productId", { ...bundle, components: [{ kind: "PRODUCT", quantity: 1 }] }],
+    ["variant without variantId", { ...bundle, components: [{ kind: "VARIANT", productId: "p", quantity: 1 }] }],
+    ["unknown component kind", { ...bundle, components: [{ kind: "SKU", productId: "p", quantity: 1 }] }],
+    ["bad value", { ...bundle, value: { kind: "FIXED_PRICE", priceMinor: 1.5 } }],
+    ["missing limit", { ...bundle, limitPerOrder: undefined }],
+  ])("rejects a bundle with %s", (_n, config) => {
+    expect(parseMetafieldPayload({ schemaVersion: 4, ruleId: "r", title: "t", collectionIds: [], config }).ok).toBe(false);
+  });
+  it("resourceIdsOf lists bundle components (variants by variant id)", async () => {
+    const { resourceIdsOf } = await import("../src");
+    expect(resourceIdsOf(bundle)).toEqual(["gid://shopify/Product/1", "gid://shopify/ProductVariant/22"]);
+    expect(resourceIdsOf({ type: "AMOUNT_OFF_PRODUCTS", target: { kind: "COLLECTIONS", collectionIds: ["c"] }, value: { kind: "PERCENTAGE", percent: 1 } })).toEqual(["c"]);
   });
 });

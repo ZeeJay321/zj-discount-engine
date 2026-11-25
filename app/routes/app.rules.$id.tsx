@@ -2,7 +2,7 @@ import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "re
 import { useActionData, useFetcher, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { RuleForm, type RuleFormValues } from "../components/RuleForm";
-import { collectionIdsOf, productIdsOf } from "@zj/discount-core";
+import { resourceIdsOf } from "@zj/discount-core";
 import { draftToFormValues } from "../lib/rule-form";
 import { retrySync, revertToSynced } from "../services/discount-sync.server";
 import { formPageContext, handleSave, othersFor } from "../services/rule-form-action.server";
@@ -16,7 +16,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const values = draftToFormValues({ ...rule, id: rule.id }, ctx) as RuleFormValues;
   let resourceTitles: Record<string, string> = {};
   try {
-    resourceTitles = await getResourceTitles(gql, [...collectionIdsOf(rule.config), ...productIdsOf(rule.config)]);
+    resourceTitles = await getResourceTitles(gql, resourceIdsOf(rule.config));
   } catch {
     // titles are cosmetic; fall back to IDs
   }

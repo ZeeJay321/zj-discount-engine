@@ -9,6 +9,8 @@ import {
   formatMinor,
   parseDecimalToMinor,
   type AmountOffProductsConfig,
+  type BundleComponent,
+  type BundleValue,
   type ProductTarget,
   type RuleConfig,
   type RuleDraft,
@@ -38,7 +40,8 @@ const num = (s: string) => (s === "" ? Number.NaN : Number(s));
 export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
   const errors: ValidationError[] = [];
   const rawType = str(fd, "ruleType");
-  const ruleType: RuleType = rawType === "TIERED_SPEND" || rawType === "BUY_X_GET_Y" ? rawType : "AMOUNT_OFF_PRODUCTS";
+  const ruleType: RuleType =
+    rawType === "TIERED_SPEND" || rawType === "BUY_X_GET_Y" || rawType === "BUNDLE" ? rawType : "AMOUNT_OFF_PRODUCTS";
   // Product set shared by amount-off and buy X get Y: collections or a product list.
   const targetIds = fd.getAll("targetIds").filter((v): v is string => typeof v === "string" && v !== "");
   const target: ProductTarget =
@@ -66,6 +69,27 @@ export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
           : { kind: "FIXED_AMOUNT", amountMinor: amount(values[i] ?? "", `config.tiers.${i}.value`, "Enter an amount.") },
     }));
     config = { type: "TIERED_SPEND", currencyCode: ctx.shopCurrency, tiers };
+  } else if (ruleType === "BUNDLE") {
+    // Component rows: parallel repeated fields, one entry per row.
+    const all = (k: string) => fd.getAll(k).map((v) => (typeof v === "string" ? v.trim() : ""));
+    const kinds = all("componentKind");
+    const ids = all("componentId");
+    const productIds = all("componentProductId");
+    const quantities = all("componentQuantity");
+    const components: BundleComponent[] = kinds.map((kind, i) =>
+      kind === "VARIANT"
+        ? { kind: "VARIANT", variantId: ids[i] ?? "", productId: productIds[i] ?? "", quantity: num(quantities[i] ?? "") }
+        : { kind: "PRODUCT", productId: ids[i] ?? "", quantity: num(quantities[i] ?? "") },
+    );
+    const valueKind = str(fd, "bundleValueKind");
+    const raw = str(fd, "bundleValue");
+    const value: BundleValue =
+      valueKind === "FIXED_AMOUNT"
+        ? { kind: "FIXED_AMOUNT", amountMinor: amount(raw, "config.value", "Enter an amount.") }
+        : valueKind === "FIXED_PRICE"
+          ? { kind: "FIXED_PRICE", priceMinor: amount(raw, "config.value", "Enter a bundle price.") }
+          : { kind: "PERCENTAGE", percent: num(raw) };
+    config = { type: "BUNDLE", currencyCode: ctx.shopCurrency, components, value, limitPerOrder: num(str(fd, "limitPerOrder")) };
   } else if (ruleType === "BUY_X_GET_Y") {
     config = {
       type: "BUY_X_GET_Y",
@@ -115,6 +139,7 @@ export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
   const v = c.type === "AMOUNT_OFF_PRODUCTS" ? c.value : null;
   const target = targetOf(c);
   const bogo = c.type === "BUY_X_GET_Y" ? c : null;
+  const bundle = c.type === "BUNDLE" ? c : null;
   const tiers =
     c.type === "TIERED_SPEND"
       ? c.tiers.map((t) => ({
@@ -143,7 +168,24 @@ export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
     buyQuantity: bogo ? String(bogo.buyQuantity) : "2",
     getQuantity: bogo ? String(bogo.getQuantity) : "1",
     bogoPercent: bogo ? String(bogo.percent) : "100",
-    limitPerOrder: bogo ? String(bogo.limitPerOrder) : "1",
+    limitPerOrder: bogo ? String(bogo.limitPerOrder) : bundle ? String(bundle.limitPerOrder) : "1",
+    components: bundle
+      ? bundle.components.map((x) => ({
+          kind: x.kind,
+          id: x.kind === "VARIANT" ? x.variantId : x.productId,
+          productId: x.productId,
+          quantity: String(x.quantity),
+        }))
+      : [
+          { kind: "PRODUCT" as const, id: "", productId: "", quantity: "1" },
+          { kind: "PRODUCT" as const, id: "", productId: "", quantity: "1" },
+        ],
+    bundleValueKind: bundle ? bundle.value.kind : ("PERCENTAGE" as const),
+    bundleValue: bundle
+      ? bundle.value.kind === "PERCENTAGE"
+        ? String(bundle.value.percent)
+        : money(bundle.value.kind === "FIXED_AMOUNT" ? bundle.value.amountMinor : bundle.value.priceMinor, bundle.currencyCode)
+      : "20",
     combinesOrder: draft.combinesWith.orderDiscounts,
     combinesProduct: draft.combinesWith.productDiscounts,
     combinesShipping: draft.combinesWith.shippingDiscounts,
@@ -163,6 +205,8 @@ export function errorsByFormField(errors: ValidationError[]): Record<string, str
     "config.getQuantity": "getQuantity",
     "config.percent": "bogoPercent",
     "config.limitPerOrder": "limitPerOrder",
+    "config.components": "components",
+    "config.value": "bundleValue",
     "config.value.percent": "percent",
     "config.value.amount": "amount",
     "config.value.currencyCode": "amount",
@@ -177,7 +221,12 @@ export function errorsByFormField(errors: ValidationError[]): Record<string, str
   const out: Record<string, string> = {};
   for (const e of errors) {
     const tier = /^config\.tiers\.(\d+)\.(threshold|value)$/.exec(e.field);
-    const key = tier ? `${tier[2] === "threshold" ? "tierThreshold" : "tierValue"}.${tier[1]}` : map[e.field] ?? "form";
+    const comp = /^config\.components\.(\d+)\.(item|quantity)$/.exec(e.field);
+    const key = tier
+      ? `${tier[2] === "threshold" ? "tierThreshold" : "tierValue"}.${tier[1]}`
+      : comp
+        ? `${comp[2] === "item" ? "componentItem" : "componentQuantity"}.${comp[1]}`
+        : map[e.field] ?? "form";
     if (!out[key]) out[key] = e.message;
   }
   return out;

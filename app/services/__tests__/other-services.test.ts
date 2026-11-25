@@ -112,8 +112,8 @@ describe("shopify-discounts helpers", () => {
     expect(await findDiscountIdByRuleId(gql, "zzz", 1)).toBeNull();
   });
   it("getResourceTitles maps collection and product ids to titles", async () => {
-    const f = fakeGql({ ZjResourceTitles: () => ({ nodes: [{ id: "g1", title: "Winter" }, { id: "p1", title: "Cap" }, null, {}] }) });
-    expect(await getResourceTitles(f.gql, ["g1", "p1", "g2"])).toEqual({ g1: "Winter", p1: "Cap" });
+    const f = fakeGql({ ZjResourceTitles: () => ({ nodes: [{ id: "g1", title: "Winter" }, { id: "p1", title: "Cap" }, { id: "v1", title: "Red", product: { title: "Cap" } }, null, {}] }) });
+    expect(await getResourceTitles(f.gql, ["g1", "p1", "v1", "g2"])).toEqual({ g1: "Winter", p1: "Cap", v1: "Cap — Red" });
     expect(await getResourceTitles(f.gql, [])).toEqual({});
     expect(f.calls).toHaveLength(1);
   });

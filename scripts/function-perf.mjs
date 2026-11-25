@@ -12,7 +12,7 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { bigCart, bogoMetafield, fixedOnce, line, linesInput, metafield, MAX_CART_LINES, pct } from "./lib/fixture-builders.mjs";
+import { bigCart, bogoMetafield, bundleMetafield, fixedOnce, line, linesInput, metafield, MIN_CAP, pct } from "./lib/fixture-builders.mjs";
 
 const fnDir = join(dirname(fileURLToPath(import.meta.url)), "..", "extensions", "zj-discount-function");
 const perfDir = join(fnDir, "tests", "perf");
@@ -55,20 +55,34 @@ const perfInputs = () =>
 if (args.includes("--sweep")) {
   // Worst case: every line eligible, real-length ids (parsing cost depends on string
   // length). All product-class rule types; the cap is the smallest N.
-  // IMPORTANT: build the Function with maxCartLines raised above 200 first, otherwise
-  // carts above the current cap return early and the sweep is meaningless.
-  if (MAX_CART_LINES <= 200) {
-    console.error(`maxCartLines is ${MAX_CART_LINES}: raise it above 200 in limits.json, rebuild, then sweep.`);
+  // IMPORTANT: build the Function with every cap in limits.json raised above 200 first,
+  // otherwise carts above a current cap return early and the sweep is meaningless.
+  if (MIN_CAP <= 200) {
+    console.error(`A cap in limits.json is ${MIN_CAP}: raise every cap above 200, rebuild, then sweep.`);
     process.exit(1);
   }
   const priced = (n) => Array.from({ length: n }, (_, i) => line(i, { unit: (10 + ((i * 37) % 90)).toFixed(2), realistic: true }));
   const variants = {
     "amount off %": (n) => linesInput({ metafield: metafield({ value: pct(15) }), lines: bigCart(n, 1, "99.99", () => true, true) }),
     "amount off fixed once": (n) => linesInput({ metafield: metafield({ value: fixedOnce(123457) }), lines: bigCart(n, 1, "99.99", () => true, true) }),
-    "buy 2 get 1": (n) => linesInput({ metafield: bogoMetafield({ limitPerOrder: 100 }), lines: priced(n) }),
+    // Worst case: buy 1 get N−1 on N single-unit lines → N−1 lines discounted.
+    "buy 1 get N-1": (n) =>
+      linesInput({ metafield: bogoMetafield({ buyQuantity: 1, getQuantity: Math.min(100, Math.max(1, n - 1)), limitPerOrder: 100 }), lines: priced(n) }),
+    "bundle fixed price": (n) => {
+      const A = "gid://shopify/Product/8000000000001";
+      const B = "gid://shopify/Product/8000000000002";
+      const mf = bundleMetafield({
+        value: { kind: "FIXED_PRICE", priceMinor: 5000 },
+        limitPerOrder: 100,
+        components: [{ kind: "PRODUCT", productId: A, quantity: 1 }, { kind: "PRODUCT", productId: B, quantity: 1 }],
+      });
+      const lines = Array.from({ length: n }, (_, i) =>
+        line(i, { unit: (20 + ((i * 37) % 90)).toFixed(2), productId: i % 2 === 0 ? A : B, realistic: true }));
+      return linesInput({ metafield: mf, lines });
+    },
   };
   const target = BASE_LIMIT * 0.5;
-  let cap = Infinity;
+  const caps = {};
   for (const [label, build] of Object.entries(variants)) {
     const at = (n) => instructions(build(n));
     let lo = 1;
@@ -80,9 +94,9 @@ if (args.includes("--sweep")) {
       else hi = mid - 1;
     }
     console.log(`${label.padEnd(22)} largest N at <= 50%: ${lo} lines (${at(lo)} instructions; N+1 = ${at(lo + 1)})`);
-    cap = Math.min(cap, lo);
+    caps[label] = lo;
   }
-  console.log(`=> measured cap: ${cap} lines`);
+  console.log("=> measured caps (set the smallest per rule type in limits.json):", JSON.stringify(caps));
 } else if (args.includes("--gate")) {
   const max = Number(args[args.indexOf("--gate") + 1] ?? 55);
   let failed = false;

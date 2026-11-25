@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
+import { Select } from "./Select";
 
 export type TargetKind = "COLLECTIONS" | "PRODUCTS";
 
@@ -20,23 +21,11 @@ export function TargetPicker({ kind: initialKind, ids, titles, error }: Props) {
   const shopify = useAppBridge();
   const [kind, setKind] = useState<TargetKind>(initialKind);
   const [items, setItems] = useState(ids.map((id) => ({ id, title: titles[id] ?? id })));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const kindRef = useRef<any>(null);
-
-  // React 18 doesn't wire custom-element events from props; listen directly.
-  useEffect(() => {
-    const el = kindRef.current;
-    if (!el) return;
-    const onChange = () => {
-      const next: TargetKind = el.value === "PRODUCTS" ? "PRODUCTS" : "COLLECTIONS";
-      setKind((prev) => {
-        if (prev !== next) setItems([]); // a different kind of set: start over
-        return next;
-      });
-    };
-    el.addEventListener("change", onChange);
-    return () => el.removeEventListener("change", onChange);
-  }, []);
+  function changeKind(v: string) {
+    const next: TargetKind = v === "PRODUCTS" ? "PRODUCTS" : "COLLECTIONS";
+    if (next !== kind) setItems([]); // a different kind of set: start over
+    setKind(next);
+  }
 
   async function pick() {
     const picked = await shopify.resourcePicker({
@@ -54,10 +43,15 @@ export function TargetPicker({ kind: initialKind, ids, titles, error }: Props) {
       {items.map((i) => (
         <input key={i.id} type="hidden" name="targetIds" value={i.id} />
       ))}
-      <s-select label="Applies to" value={kind} ref={kindRef}>
-        <s-option value="COLLECTIONS">Products in collections</s-option>
-        <s-option value="PRODUCTS">Specific products</s-option>
-      </s-select>
+      <Select
+        label="Applies to"
+        value={kind}
+        onChange={changeKind}
+        options={[
+          { value: "COLLECTIONS", label: "Products in collections" },
+          { value: "PRODUCTS", label: "Specific products" },
+        ]}
+      />
       {items.length === 0 ? (
         <s-text color="subdued">No {noun} chosen.</s-text>
       ) : (
