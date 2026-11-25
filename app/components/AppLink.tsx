@@ -7,10 +7,11 @@ import { useNavigate } from "react-router";
  * blank page; React Router navigation keeps the session (App Bridge adds the token
  * to the data request). The href stays for hover/accessibility.
  */
-export function AppLink({ to, children }: { to: string; children: ReactNode }) {
+export function AppLink({ to, children, id }: { to: string; children: ReactNode; id?: string }) {
   const navigate = useNavigate();
   return (
     <s-link
+      {...(id ? { id } : {})}
       href={to}
       onClick={(event: { preventDefault: () => void }) => {
         event.preventDefault();
