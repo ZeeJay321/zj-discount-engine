@@ -9,6 +9,7 @@ import { appContext } from "../services/app-context.server";
 import { quotaSummary } from "../services/discount-quota.server";
 import { deleteRule, reconcile, retrySync, revertToSynced, setEnabled } from "../services/discount-sync.server";
 import type { SyncStatus } from "../services/rule-repo.server";
+import { publishOffers } from "../services/public-offers.server";
 import { getResourceTitles } from "../services/shopify-discounts.server";
 import { checkStore } from "../services/store-check.server";
 
@@ -17,6 +18,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   await reconcile(deps); // retry rows left PENDING/DELETING by a crash or timeout
   const [rules, store] = await Promise.all([repo.list(shop), checkStore(gql)]);
   const quota = await quotaSummary(gql, rules, new Date());
+  // This list reloads after every save / enable / disable / delete, so publishing here
+  // keeps the storefront's offer summary current. Best effort: it only drives a hint.
+  try {
+    await publishOffers(gql, rules);
+  } catch (err) {
+    console.warn("[public-offers] publish failed:", err instanceof Error ? err.message : String(err));
+  }
   const ids = [...new Set(rules.flatMap((r) => [...collectionIdsOf(r.config), ...productIdsOf(r.config)]))].slice(0, 250);
   let titles: Record<string, string> = {};
   try {

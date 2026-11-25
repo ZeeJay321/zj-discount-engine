@@ -11,6 +11,15 @@ embedded = true
 # read_products:   collection picker and collection titles.
 scopes = "write_discounts,read_products"
 
+# Live Buy X Get Y offers for the headless storefront's bag prompt (see
+# app/services/public-offers.server.ts). Storefront API reads it as namespace
+# app--<app id>. No customer data.
+[shop.metafields.app.public_offers]
+type = "json"
+name = "Public offers"
+description = "Live Buy X Get Y offers for the storefront bag prompt"
+access.storefront = "public_read"
+
 [webhooks]
 api_version = "2026-10"
 
