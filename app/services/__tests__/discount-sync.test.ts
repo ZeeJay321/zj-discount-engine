@@ -55,7 +55,6 @@ describe("toDiscountInput", () => {
       ruleId: "rule_1",
       title: "10% off Winter",
       collectionIds: [C1],
-      includeLines: true,
       config: pct10,
     });
   });
@@ -427,14 +426,14 @@ describe("tiered spend rules", () => {
     ],
   };
 
-  it("are created with discountClasses ORDER, no collections, includeLines=false", async () => {
+  it("are created with discountClasses ORDER and no collections", async () => {
     const t = setup({ ZjCreateRuleDiscount: created() });
     const res = await saveRule(t.deps, draft({ title: "Spend more", config: tiers }));
     expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
     const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
     expect(sent.automaticAppDiscount.discountClasses).toEqual(["ORDER"]);
     const payload = JSON.parse(sent.automaticAppDiscount.metafields[0].value);
-    expect(payload).toMatchObject({ schemaVersion: 2, includeLines: false, collectionIds: [], config: tiers });
+    expect(payload).toMatchObject({ schemaVersion: 2, collectionIds: [], config: tiers });
   });
 
   it.each([

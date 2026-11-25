@@ -3,12 +3,12 @@
  * reads it through its input query; `collectionIds` is top-level because the
  * extension's input variables are taken from this metafield's top-level keys.
  */
-import { discountClassFor, needsCartLines } from "./evaluate";
+import { discountClassFor } from "./evaluate";
 import type { AmountOffValue, DiscountClass, RuleConfig, RuleDraft, SpendTier, TierValue } from "./types";
 
 /**
- * v1: amount-off-products only, no `includeLines`.
- * v2: adds `includeLines` (input-query variable) and the TIERED_SPEND type.
+ * v1: amount-off-products only.
+ * v2: adds the TIERED_SPEND type (same top-level shape).
  * Readers accept both; writers always write the current version. Discounts saved
  * with v1 keep working until they are next edited.
  */
@@ -23,11 +23,6 @@ export interface RuleMetafieldPayload {
   title: string;
   /** Input-query variable for `inAnyCollection(ids: $collectionIds)`. Always present. */
   collectionIds: string[];
-  /**
-   * Input-query variable for `lines @include(if: $includeLines)`: order rules only
-   * need the cart subtotal, so they skip line data. Absent in v1 (query default: true).
-   */
-  includeLines: boolean;
   config: RuleConfig;
 }
 
@@ -37,7 +32,6 @@ export function toMetafieldPayload(rule: { id: string; title: string; config: Ru
     ruleId: rule.id,
     title: rule.title,
     collectionIds: collectionIdsOf(rule.config),
-    includeLines: needsCartLines(rule.config),
     config: rule.config,
   };
 }
@@ -68,7 +62,6 @@ export function parseMetafieldPayload(json: unknown): ParseResult<RuleMetafieldP
   const config = parseConfig(json.config);
   if (!config.ok) return config;
   if (version === 1 && config.value.type !== "AMOUNT_OFF_PRODUCTS") return { ok: false, error: "rule type needs schemaVersion 2" };
-  if (version >= 2 && typeof json.includeLines !== "boolean") return { ok: false, error: "includeLines missing" };
   return {
     ok: true,
     value: {
@@ -76,7 +69,6 @@ export function parseMetafieldPayload(json: unknown): ParseResult<RuleMetafieldP
       ruleId: json.ruleId,
       title: json.title,
       collectionIds: json.collectionIds,
-      includeLines: version === 1 ? true : (json.includeLines as boolean),
       config: config.value,
     },
   };

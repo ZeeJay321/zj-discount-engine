@@ -2,10 +2,10 @@
 # cart line (see scripts/function-perf.mjs). Only what rule evaluation needs.
 #
 # Variables come from the discount's $app/rule-config metafield (top-level keys):
-# - collectionIds: collections for amount-off-collection rules
-# - includeLines:  false for order rules (tiered spend), which only need the subtotal;
-#                  defaults to true for metafields written before it existed (schema v1).
-query CartInput($collectionIds: [ID!], $includeLines: Boolean = true) {
+# - collectionIds: collections for amount-off-collection rules.
+# Shopify does not allow directives (@include/@skip) in input queries, so lines are
+# always requested; order rules (tiered spend) simply don't read them.
+query CartInput($collectionIds: [ID!]) {
   presentmentCurrencyRate
   cart {
     cost {
@@ -14,7 +14,7 @@ query CartInput($collectionIds: [ID!], $includeLines: Boolean = true) {
         currencyCode
       }
     }
-    lines @include(if: $includeLines) {
+    lines {
       id
       quantity
       cost {

@@ -83,13 +83,13 @@ write("fixtures", "lines-cap-plus-one.json", fixture(
   none,
 ));
 
-// A discount saved before schema v2 (no includeLines) must keep working unchanged.
+// A discount saved before schema v2 must keep working unchanged.
 write("fixtures", "lines-schema-v1-metafield.json", fixture(
   linesInput({ metafield: metafieldV1({ value: pct(10) }), lines: [line(1, { quantity: 2, amount: "20.0" }), line(2, { amount: "9.99" })] }),
   product([cand(1, 2.0), cand(2, 1.0)]),
 ));
 
-// --- Tiered spend: $100 → 10%, $200 → 15%, $300 → 20% (order subtotal, no lines in the input) ---
+// --- Tiered spend: $100 → 10%, $200 → 15%, $300 → 20% (order subtotal; lines are ignored) ---
 const order = (value) => ({
   operations: [{ orderDiscountsAdd: { candidates: [{ targets: [{ orderSubtotal: { excludedCartLineIds: [] } }], value }], selectionStrategy: "FIRST" } }],
 });
@@ -115,11 +115,9 @@ write("fixtures", "tiered-fixed-jpy-top.json", fixture(orderInput({ subtotal: "2
 write("fixtures", "tiered-kwd-at-first.json", fixture(orderInput({ subtotal: "30.700", currencyCode: "KWD", rate: "0.307", metafield: THREE }), order({ percentage: { value: 10 } })));
 // Wrong class (discount saved as PRODUCT) → nothing.
 write("fixtures", "tiered-wrong-class.json", fixture(orderInput({ subtotal: "500.00", discountClasses: ["PRODUCT"], metafield: THREE }), none));
-// If Shopify ever sends lines anyway (directive ignored), the result is the same.
-// Lives in perf/ (parity-checked, not shape-validated: it deliberately doesn't match
-// the query as resolved with includeLines=false).
-write("perf", "tiered-40-lines-present.json", fixture(
-  linesInput({ discountClasses: ["ORDER"], metafield: THREE, lines: bigCart(40, 1, "10.00") }), // 40 lines > cap, $400 subtotal
+// A 40-line cart (above the amount-off cap): tiered rules are not capped.
+write("fixtures", "tiered-40-lines.json", fixture(
+  linesInput({ discountClasses: ["ORDER"], metafield: THREE, lines: bigCart(40, 1, "10.00") }), // $400 subtotal
   order({ percentage: { value: 20 } }),
 ));
 
@@ -138,10 +136,8 @@ write("perf", "cap-percent.json", fixture(linesInput({ metafield: metafield({ va
 write("perf", "cap-fixed-once.json", fixture(linesInput({ metafield: metafield({ value: fixedOnce(123457) }), lines: bigCart(MAX_CART_LINES) }), null));
 write("perf", "cart-200-lines.json", fixture(linesInput({ metafield: metafield({ value: pct(15) }), lines: bigCart(200, 1, "99.99", (i) => i % 2 === 0) }), null));
 write("perf", "cart-250-lines-qty999.json", fixture(linesInput({ metafield: metafield({ value: pct(15) }), lines: bigCart(250, 999, "99.99", (i) => i % 2 === 0) }), null));
-// Tiered perf: as Shopify sends it (no lines) — cart size is irrelevant — and, as a
-// fallback measurement, with N lines present in case the @include directive is ignored.
-write("perf", "tiered-no-lines.json", fixture(orderInput({ subtotal: "250.00", metafield: THREE }), null));
+// Tiered perf: lines are always in the input, so measure by cart size.
 for (const n of [1, 30, 200]) {
-  write("perf", `tiered-${n}-lines-present.json`, fixture(linesInput({ discountClasses: ["ORDER"], metafield: THREE, lines: bigCart(n) }), null));
+  write("perf", `tiered-${n}-lines.json`, fixture(linesInput({ discountClasses: ["ORDER"], metafield: THREE, lines: bigCart(n) }), null));
 }
 console.log(`fixtures written (MAX_CART_LINES=${MAX_CART_LINES})`);

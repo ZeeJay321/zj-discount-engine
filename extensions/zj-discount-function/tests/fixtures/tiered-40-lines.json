@@ -584,7 +584,6 @@
             "ruleId": "tiered_1",
             "title": "Spend more, save more",
             "collectionIds": [],
-            "includeLines": false,
             "config": {
               "type": "TIERED_SPEND",
               "currencyCode": "USD",

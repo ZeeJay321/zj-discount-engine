@@ -45,11 +45,6 @@ export function discountClassFor(config: RuleConfig): DiscountClass {
   }
 }
 
-/** Whether the Function needs cart line data for this rule type (input-query variable). */
-export function needsCartLines(config: RuleConfig): boolean {
-  return config.type !== "TIERED_SPEND";
-}
-
 /** True when a rule is live at `now` (simulator only — the Function never checks dates). */
 export function isActiveAt(rule: { enabled: boolean; startsAt: string; endsAt: string | null }, now: Date): boolean {
   if (!rule.enabled) return false;

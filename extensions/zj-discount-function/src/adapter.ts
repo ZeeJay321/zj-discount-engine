@@ -18,8 +18,7 @@ export interface LinesInputLike {
   presentmentCurrencyRate: string | number;
   cart: {
     cost: { subtotalAmount: { amount: string | number; currencyCode: string } };
-    /** Absent when the rule sets includeLines=false (order rules). */
-    lines?: ReadonlyArray<{
+    lines: ReadonlyArray<{
       id: string;
       quantity: number;
       cost: { subtotalAmount: { amount: string | number } };
@@ -31,7 +30,7 @@ export interface LinesInputLike {
 export function toCoreCart(input: LinesInputLike, collectionIds: readonly string[]): Cart {
   const currencyCode = input.cart.cost.subtotalAmount.currencyCode;
   const exp = currencyExponent(currencyCode);
-  const src = input.cart.lines ?? [];
+  const src = input.cart.lines;
   const lines: CartLine[] = [];
   for (let i = 0; i < src.length; i++) {
     const line = src[i];
@@ -72,7 +71,7 @@ export function toProductOperations(result: RuleResult) {
   return [{ productDiscountsAdd: { candidates, selectionStrategy: "ALL" as const } }];
 }
 
-/** Order rules only need the subtotal Shopify reports; no line data is read. */
+/** Order rules only need the subtotal Shopify reports; line data is ignored. */
 export function toCoreOrderCart(input: LinesInputLike): Cart {
   const { amount, currencyCode } = input.cart.cost.subtotalAmount;
   let subtotalMinor = 0;

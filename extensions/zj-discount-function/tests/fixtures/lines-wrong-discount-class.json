@@ -40,7 +40,6 @@
             "collectionIds": [
               "gid://shopify/Collection/100"
             ],
-            "includeLines": true,
             "config": {
               "type": "AMOUNT_OFF_PRODUCTS",
               "target": {

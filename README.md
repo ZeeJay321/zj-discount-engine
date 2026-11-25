@@ -126,9 +126,8 @@ To switch type, create a new rule and delete the old one.
 The rule-config metafield has a `schemaVersion`.
 
 - **v1:** amount off collections only.
-- **v2:** adds `includeLines` and the tiered type. The Function reads both, so
-  discounts saved before v2 keep working until they're next edited. Saving always
-  writes v2.
+- **v2:** adds the tiered type. The Function reads both, so discounts saved before v2
+  keep working until they're next edited. Saving always writes v2.
 
 ### Opening rules from Shopify admin
 
@@ -182,14 +181,14 @@ amounts can be longer than the fixtures'. The value lives in
 The cap applies only to **amount-off-collection** rules. **Tiered spend has no cart-size
 problem**, so it isn't capped.
 
-- It only needs the cart subtotal. The input query marks the line data with
-  `lines @include(if: $includeLines)`, and tiered rules set `includeLines: false` in
-  their metafield (it defaults to true for v1 metafields).
-- Measured: about **1.19M instructions (10.8%)** with no lines, whatever the cart size.
-- Shopify's docs don't mention directives in Function input queries. If Shopify sends
-  lines anyway, it still works: 1 line 10.2%, 30 lines 18.8%, 200 lines 63.4%. The
-  limit scales with lines above 200, so the share stays about the same for bigger carts.
-- The Function run log in the Dev Dashboard shows which of the two happened.
+- It only uses the cart subtotal. Shopify doesn't allow directives (`@include` /
+  `@skip`) in Function input queries ("Directives are not allowed in input queries"),
+  so line data is always sent, and tiered rules ignore it.
+- Measured instruction counts: **1 line 10.1%, 30 lines 18.7%, 200 lines 63.4%** of the
+  limit. Above 200 lines the limit scales with cart size, so the share stays about the
+  same.
+- If tiered spend ever needed to be cheaper, the fix would be a second Function whose
+  query asks only for the subtotal.
 
 **Above the cap, an amount-off rule gives no discount at all, never a partial one.** The Function
 checks the raw line count first and returns no operations; core's `evaluateRule` does

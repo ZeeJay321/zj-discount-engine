@@ -10,7 +10,23 @@
             "amount": "0.0",
             "currencyCode": "USD"
           }
-        }
+        },
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 1,
+            "cost": {
+              "subtotalAmount": {
+                "amount": "0.0"
+              }
+            },
+            "merchandise": {
+              "product": {
+                "inAnyCollection": false
+              }
+            }
+          }
+        ]
       },
       "discount": {
         "discountClasses": [
@@ -22,7 +38,6 @@
             "ruleId": "tiered_1",
             "title": "Spend more, save more",
             "collectionIds": [],
-            "includeLines": false,
             "config": {
               "type": "TIERED_SPEND",
               "currencyCode": "USD",

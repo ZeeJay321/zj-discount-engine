@@ -19,13 +19,12 @@ export function metafield({ ruleId = "rule_1", title = "10% off Winter", collect
       ruleId,
       title,
       collectionIds,
-      includeLines: true,
       config: { type: "AMOUNT_OFF_PRODUCTS", target: { kind: "COLLECTIONS", collectionIds }, value },
     },
   };
 }
 
-/** Same rule as written before tiered spend existed (schema v1, no includeLines). */
+/** Same rule as written before tiered spend existed (schema v1). */
 export function metafieldV1({ ruleId = "rule_1", title = "10% off Winter", collectionIds = [C100], value }) {
   return {
     jsonValue: {
@@ -46,7 +45,6 @@ export function tieredMetafield({ ruleId = "tiered_1", title = "Spend more, save
       ruleId,
       title,
       collectionIds: [],
-      includeLines: false,
       config: {
         type: "TIERED_SPEND",
         currencyCode,
@@ -81,11 +79,18 @@ export function linesInput({ lines, metafield: mf, discountClasses = ["PRODUCT"]
   };
 }
 
-/** Order-rule input as Shopify sends it when includeLines=false: no lines at all. */
-export function orderInput({ subtotal, metafield: mf, discountClasses = ["ORDER"], rate = "1.0", currencyCode = "USD" }) {
+/**
+ * Order-rule input. Shopify always sends lines (directives aren't allowed in input
+ * queries); the order path ignores them, so one line carrying the whole subtotal is
+ * enough. Pass `lines` to model a bigger cart.
+ */
+export function orderInput({ subtotal, metafield: mf, discountClasses = ["ORDER"], rate = "1.0", currencyCode = "USD", lines }) {
   return {
     presentmentCurrencyRate: rate,
-    cart: { cost: { subtotalAmount: { amount: subtotal, currencyCode } } },
+    cart: {
+      cost: { subtotalAmount: { amount: subtotal, currencyCode } },
+      lines: lines ?? [line(1, { amount: subtotal, inCollection: false })],
+    },
     discount: { discountClasses, metafield: mf ?? null },
   };
 }
