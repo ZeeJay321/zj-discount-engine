@@ -116,6 +116,9 @@ export default function RulesIndex() {
       <s-button slot="primary-action" variant="primary" onClick={() => go("/app/rules/new")}>
         New rule
       </s-button>
+      <s-button slot="secondary-actions" onClick={() => go("/app/simulator")}>
+        Simulator
+      </s-button>
 
       {!store.ok && (
         <s-banner tone="critical" heading="Discounts from this app won't run on this store">

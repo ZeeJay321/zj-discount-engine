@@ -16,7 +16,17 @@ and applies the discount at checkout.
 | Bundle | PRODUCT | 2–5 components (a product or a specific variant, × quantity); complete bundles get a percentage off, a fixed amount off or a fixed bundle price |
 | Free shipping | SHIPPING | cart subtotal threshold; percentage off delivery options (100% = free), optional max per option; all options or cheapest per group |
 
-The simulator is next.
+## Simulator
+
+Open **Simulator** in the app nav (or from the rules list) at `/app/simulator`.
+
+- Runs entirely in the browser against your shop’s saved rules — cart state stays in React memory (JSON import/export only; nothing is written to the DB or applied on Shopify).
+- Per-rule totals use the same `evaluateRule` path as the Function (dates, cart-line caps, and empty/no-match reasons included).
+- The **combined estimate** is labelled as an estimate:
+  - Greedy within each discount class (best-first); stack only when both rules allow that class
+  - Product before order when `TIER_BASIS` is `after_product_discounts` (default is `before_product_discounts` — confirm on a real store)
+  - Shipping in its own bucket
+  - End dates exclusive; product rules above their measured line cap give nothing
 
 ## Layout
 
@@ -24,9 +34,12 @@ The simulator is next.
 app/                         React Router admin app (Polaris web components)
   routes/app._index.tsx      rules list, store check, discount quota
   routes/app.rules.*.tsx     create / edit form
+  routes/app.simulator.tsx   browser-only cart simulator
+  components/simulator/      cart builder, delivery, rule checklist, results
   services/                  sync service, Shopify GraphQL, quota, store check, compliance
   lib/rule-form.ts           form ⇄ rule draft, shared by browser and server
 packages/discount-core/      PURE TypeScript discount logic: no I/O, shared by Function and app
+  src/simulate.ts            cart simulator + combination estimate (`TIER_BASIS`)
   src/limits.json            MAX_CART_LINES (measured, see below)
 extensions/zj-discount-function/
   src/*.graphql              input queries (kept minimal on purpose)

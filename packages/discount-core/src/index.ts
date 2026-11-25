@@ -11,3 +11,13 @@ export { isUsableLine, matchesTarget, MAX_LINE_SUBTOTAL_MINOR, unitPriceOf } fro
 export { MAX_CART_LINES_BY_TYPE, maxCartLinesFor, type ProductRuleType } from "./limits";
 export { evaluateTieredSpend, cartSubtotalMinor } from "./rules/tieredSpend";
 export { evaluateFreeShipping } from "./rules/freeShipping";
+export {
+  simulate,
+  TIER_BASIS,
+  type TierBasis,
+  type SimulatableRule,
+  type SimulateResult,
+  type SimulateOptions,
+  type PerRuleSimulation,
+  type NoDiscountReasonCode,
+} from "./simulate";

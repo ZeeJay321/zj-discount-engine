@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 
 interface Props {
   label: string;
-  name: string;
+  /** Form field name. Omit for controlled UI-only checkboxes (pass `onChange`). */
+  name?: string;
   checked: boolean;
   details?: string;
   error?: string;
+  onChange?: (checked: boolean) => void;
 }
 
 /**
@@ -16,11 +18,13 @@ interface Props {
  * submits as unchecked. This wrapper keeps the property in sync and writes a hidden
  * input so FormData always sees "on" when checked, regardless of the custom element.
  */
-export function Checkbox({ label, name, checked: initial, details, error }: Props) {
+export function Checkbox({ label, name, checked: initial, details, error, onChange }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [el, setEl] = useState<any>(null);
   const [on, setOn] = useState(initial);
   const hiddenRef = useRef<HTMLInputElement>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => setOn(initial), [initial]);
 
@@ -35,6 +39,7 @@ export function Checkbox({ label, name, checked: initial, details, error }: Prop
       const next = !!el.checked;
       setOn(next);
       if (hiddenRef.current) hiddenRef.current.disabled = !next;
+      onChangeRef.current?.(next);
     };
     el.addEventListener("change", handler);
     return () => el.removeEventListener("change", handler);
@@ -42,7 +47,7 @@ export function Checkbox({ label, name, checked: initial, details, error }: Prop
 
   return (
     <>
-      <input ref={hiddenRef} type="hidden" name={name} value="on" disabled={!on} />
+      {name ? <input ref={hiddenRef} type="hidden" name={name} value="on" disabled={!on} /> : null}
       <s-checkbox
         ref={setEl}
         label={label}

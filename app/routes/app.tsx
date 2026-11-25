@@ -20,6 +20,7 @@ export default function App() {
       <s-app-nav>
         <s-link href="/app">Rules</s-link>
         <s-link href="/app/rules/new">New rule</s-link>
+        <s-link href="/app/simulator">Simulator</s-link>
       </s-app-nav>
       <Outlet />
     </AppProvider>
