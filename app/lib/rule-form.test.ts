@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateRule, type AmountOffProductsConfig } from "@zj/discount-core";
-import { describeBundle, describeBuyXGetY, describeTiers, describeValue, RULE_TYPE_LABELS } from "./rule-display";
+import { describeBundle, describeBuyXGetY, describeFreeShipping, describeTiers, describeValue, RULE_TYPE_LABELS } from "./rule-display";
 import { draftToFormValues, errorsByFormField, parseRuleForm, utcIsoToZonedDay, zonedDayToUtcIso } from "./rule-form";
 
 const ctx = { shopCurrency: "USD", timezone: "America/New_York" };
@@ -298,5 +298,60 @@ describe("bundle form", () => {
     expect(describeBundle(d({ value: "100" }), {})).toBe("? + 2× ?: free (up to 3 times per order)");
     expect(describeValue(d({}), titles)).toContain("Shirt");
     expect(RULE_TYPE_LABELS.BUNDLE).toBe("Bundle");
+  });
+});
+
+describe("free shipping form", () => {
+  const shipEntries = (o: Record<string, string> = {}): Array<[string, string]> => [
+    ["ruleType", "FREE_SHIPPING"],
+    ["title", "Free ship $100"],
+    ["priority", "4"],
+    ["shipThreshold", o.threshold ?? "100.00"],
+    ["bogoPercent", o.percent ?? "100"],
+    ...(o.max !== undefined && o.max !== "" ? [["shipMaxAmount", o.max] as [string, string]] : []),
+    ["shipAppliesTo", o.appliesTo ?? "ALL"],
+    ["startDate", "2026-12-01"],
+    ["combinesOrder", "on"],
+  ];
+
+  it("parses threshold, percent, optional max, and appliesTo; validates", () => {
+    const { draft, errors } = parseRuleForm(fd(shipEntries()), ctx);
+    expect(errors).toEqual([]);
+    expect(draft.config).toEqual({
+      type: "FREE_SHIPPING",
+      currencyCode: "USD",
+      thresholdMinor: 10000,
+      percent: 100,
+      maxAmountMinor: null,
+      appliesTo: "ALL",
+    });
+    expect(draft.combinesWith).toEqual({ orderDiscounts: true, productDiscounts: false, shippingDiscounts: false });
+    expect(validateRule(draft)).toEqual([]);
+  });
+
+  it("parses 50%, max amount, and CHEAPEST", () => {
+    const { draft } = parseRuleForm(fd(shipEntries({ percent: "50", max: "3.00", appliesTo: "CHEAPEST" })), ctx);
+    expect(draft.config).toMatchObject({
+      type: "FREE_SHIPPING",
+      percent: 50,
+      maxAmountMinor: 300,
+      appliesTo: "CHEAPEST",
+    });
+    expect(validateRule(draft)).toEqual([]);
+  });
+
+  it("round-trips through draftToFormValues and previews", () => {
+    const { draft } = parseRuleForm(fd(shipEntries({ percent: "100", max: "5", appliesTo: "CHEAPEST" })), ctx);
+    expect(draftToFormValues(draft, ctx)).toMatchObject({
+      ruleType: "FREE_SHIPPING",
+      shipThreshold: "100.00",
+      bogoPercent: "100",
+      shipMaxAmount: "5.00",
+      shipAppliesTo: "CHEAPEST",
+    });
+    expect(describeFreeShipping(draft.config as never)).toBe(
+      "Free shipping on orders of $100.00 or more (max $5.00 per option), cheapest option only",
+    );
+    expect(RULE_TYPE_LABELS.FREE_SHIPPING).toBe("Free shipping");
   });
 });

@@ -98,6 +98,7 @@ export function evaluateBundle(rule: EvaluableRule & { config: BundleConfig }, c
     currencyCode: cart.currencyCode,
     lines: [],
     order: null,
+    shipping: [],
     totalMinor: 0,
   };
   const comps = c.components;

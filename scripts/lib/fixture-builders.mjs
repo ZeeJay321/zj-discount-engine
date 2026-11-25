@@ -174,3 +174,82 @@ export function bundleMetafield({
     jsonValue: { schemaVersion: 4, ruleId, title, collectionIds: [], config: { type: "BUNDLE", currencyCode, components, value, limitPerOrder } },
   };
 }
+
+/** Free-shipping rule metafield (schema v5). */
+export function freeShippingMetafield({
+  ruleId = "ship_1",
+  title = "Free shipping over $100",
+  currencyCode = "USD",
+  thresholdMinor = 10000,
+  percent = 100,
+  maxAmountMinor = null,
+  appliesTo = "ALL",
+} = {}) {
+  return {
+    jsonValue: {
+      schemaVersion: 5,
+      ruleId,
+      title,
+      collectionIds: [],
+      config: { type: "FREE_SHIPPING", currencyCode, thresholdMinor, percent, maxAmountMinor, appliesTo },
+    },
+  };
+}
+
+/** One delivery option in a group. */
+export function deliveryOption(handle, amount) {
+  return { handle, cost: { amount } };
+}
+
+/**
+ * Delivery-options Function input. `groups` is an array of option arrays
+ * (each inner array = one delivery group's options).
+ */
+export function deliveryInput({
+  subtotal,
+  groups = [[{ handle: "standard", amount: "5.00" }]],
+  metafield: mf,
+  discountClasses = ["SHIPPING"],
+  rate = "1.0",
+  currencyCode = "USD",
+} = {}) {
+  return {
+    presentmentCurrencyRate: rate,
+    cart: {
+      cost: { subtotalAmount: { amount: subtotal, currencyCode } },
+      deliveryGroups: groups.map((options) => ({
+        deliveryOptions: options.map((o) =>
+          o.handle !== undefined && o.cost !== undefined ? o : deliveryOption(o.handle, o.amount),
+        ),
+      })),
+    },
+    discount: { discountClasses, metafield: mf ?? null },
+  };
+}
+
+export function deliveryFixture(input, output) {
+  return {
+    payload: {
+      export: "cart-delivery-options-discounts-generate-run",
+      target: "cart.delivery-options.discounts.generate.run",
+      input,
+      output,
+    },
+  };
+}
+
+export function deliveryOps(candidates) {
+  return {
+    operations: [
+      {
+        deliveryDiscountsAdd: {
+          selectionStrategy: "ALL",
+          candidates: candidates.map((c) => ({
+            targets: [{ deliveryOption: { handle: c.handle } }],
+            value: c.percent !== undefined ? { percentage: { value: c.percent } } : { fixedAmount: { amount: c.amount } },
+          })),
+        },
+      },
+    ],
+  };
+}

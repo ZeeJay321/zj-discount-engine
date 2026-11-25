@@ -11,7 +11,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const values: RuleFormValues = {
     id: "",
-    ruleType: ((t) => (t === "TIERED_SPEND" || t === "BUY_X_GET_Y" || t === "BUNDLE" ? t : "AMOUNT_OFF_PRODUCTS"))(url.searchParams.get("type")),
+    ruleType: ((t) =>
+      t === "TIERED_SPEND" || t === "BUY_X_GET_Y" || t === "BUNDLE" || t === "FREE_SHIPPING" ? t : "AMOUNT_OFF_PRODUCTS")(
+      url.searchParams.get("type"),
+    ),
     title: "",
     priority: String(rules.length ? Math.max(...rules.map((r) => r.priority)) + 1 : 0),
     valueKind: "PERCENTAGE",
@@ -37,6 +40,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ],
     bundleValueKind: "PERCENTAGE",
     bundleValue: "20",
+    shipThreshold: "100.00",
+    shipMaxAmount: "",
+    shipAppliesTo: "ALL",
     combinesOrder: false,
     combinesProduct: false,
     combinesShipping: true,

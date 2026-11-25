@@ -41,7 +41,9 @@ export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
   const errors: ValidationError[] = [];
   const rawType = str(fd, "ruleType");
   const ruleType: RuleType =
-    rawType === "TIERED_SPEND" || rawType === "BUY_X_GET_Y" || rawType === "BUNDLE" ? rawType : "AMOUNT_OFF_PRODUCTS";
+    rawType === "TIERED_SPEND" || rawType === "BUY_X_GET_Y" || rawType === "BUNDLE" || rawType === "FREE_SHIPPING"
+      ? rawType
+      : "AMOUNT_OFF_PRODUCTS";
   // Product set shared by amount-off and buy X get Y: collections or a product list.
   const targetIds = fd.getAll("targetIds").filter((v): v is string => typeof v === "string" && v !== "");
   const target: ProductTarget =
@@ -99,6 +101,16 @@ export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
       percent: num(str(fd, "bogoPercent")),
       limitPerOrder: num(str(fd, "limitPerOrder")),
     };
+  } else if (ruleType === "FREE_SHIPPING") {
+    const maxRaw = str(fd, "shipMaxAmount");
+    config = {
+      type: "FREE_SHIPPING",
+      currencyCode: ctx.shopCurrency,
+      thresholdMinor: amount(str(fd, "shipThreshold"), "config.thresholdMinor", "Enter a spend threshold."),
+      percent: num(str(fd, "bogoPercent")),
+      maxAmountMinor: maxRaw === "" ? null : amount(maxRaw, "config.maxAmountMinor", "Enter a maximum amount."),
+      appliesTo: str(fd, "shipAppliesTo") === "CHEAPEST" ? "CHEAPEST" : "ALL",
+    };
   } else {
     const valueKind = str(fd, "valueKind") === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE";
     const value: AmountOffProductsConfig["value"] =
@@ -140,6 +152,7 @@ export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
   const target = targetOf(c);
   const bogo = c.type === "BUY_X_GET_Y" ? c : null;
   const bundle = c.type === "BUNDLE" ? c : null;
+  const ship = c.type === "FREE_SHIPPING" ? c : null;
   const tiers =
     c.type === "TIERED_SPEND"
       ? c.tiers.map((t) => ({
@@ -167,7 +180,7 @@ export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
     targetIds: target ? (target.kind === "PRODUCTS" ? [...target.productIds] : [...target.collectionIds]) : [],
     buyQuantity: bogo ? String(bogo.buyQuantity) : "2",
     getQuantity: bogo ? String(bogo.getQuantity) : "1",
-    bogoPercent: bogo ? String(bogo.percent) : "100",
+    bogoPercent: bogo ? String(bogo.percent) : ship ? String(ship.percent) : "100",
     limitPerOrder: bogo ? String(bogo.limitPerOrder) : bundle ? String(bundle.limitPerOrder) : "1",
     components: bundle
       ? bundle.components.map((x) => ({
@@ -186,6 +199,9 @@ export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
         ? String(bundle.value.percent)
         : money(bundle.value.kind === "FIXED_AMOUNT" ? bundle.value.amountMinor : bundle.value.priceMinor, bundle.currencyCode)
       : "20",
+    shipThreshold: ship ? money(ship.thresholdMinor, ship.currencyCode) : "100.00",
+    shipMaxAmount: ship && ship.maxAmountMinor !== null ? money(ship.maxAmountMinor, ship.currencyCode) : "",
+    shipAppliesTo: ship ? ship.appliesTo : ("ALL" as const),
     combinesOrder: draft.combinesWith.orderDiscounts,
     combinesProduct: draft.combinesWith.productDiscounts,
     combinesShipping: draft.combinesWith.shippingDiscounts,
@@ -215,6 +231,9 @@ export function errorsByFormField(errors: ValidationError[]): Record<string, str
     "config.type": "form",
     "config.tiers": "tiers",
     "config.currencyCode": "tiers",
+    "config.thresholdMinor": "shipThreshold",
+    "config.maxAmountMinor": "shipMaxAmount",
+    "config.appliesTo": "shipAppliesTo",
     ruleType: "form",
     enabled: "form",
   };

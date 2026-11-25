@@ -70,6 +70,7 @@ export function evaluateAmountOffProducts(
     currencyCode: cart.currencyCode,
     lines,
     order: null,
+    shipping: [],
     totalMinor,
   };
 }

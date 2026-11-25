@@ -10,3 +10,4 @@ export { componentIndexOf, evaluateBundle } from "./rules/bundle";
 export { isUsableLine, matchesTarget, MAX_LINE_SUBTOTAL_MINOR, unitPriceOf } from "./rules/target";
 export { MAX_CART_LINES_BY_TYPE, maxCartLinesFor, type ProductRuleType } from "./limits";
 export { evaluateTieredSpend, cartSubtotalMinor } from "./rules/tieredSpend";
+export { evaluateFreeShipping } from "./rules/freeShipping";

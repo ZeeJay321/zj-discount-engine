@@ -14,7 +14,7 @@ export type ProductRuleType = "AMOUNT_OFF_PRODUCTS" | "BUY_X_GET_Y" | "BUNDLE";
  */
 export const MAX_CART_LINES_BY_TYPE: Readonly<Record<ProductRuleType, number>> = limits.maxCartLines;
 
-/** The cap for a rule type, or null when the type has none (tiered spend). */
+/** The cap for a rule type, or null when the type has none (tiered spend, free shipping). */
 export function maxCartLinesFor(type: RuleType): number | null {
-  return type === "TIERED_SPEND" ? null : MAX_CART_LINES_BY_TYPE[type];
+  return type === "TIERED_SPEND" || type === "FREE_SHIPPING" ? null : MAX_CART_LINES_BY_TYPE[type];
 }

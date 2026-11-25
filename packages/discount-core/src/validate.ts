@@ -3,7 +3,15 @@
  * Returns field-keyed errors; an empty array means the rule is valid.
  */
 import { MAX_LINE_SUBTOTAL_MINOR } from "./rules/target";
-import type { AmountOffProductsConfig, BundleConfig, BuyXGetYConfig, ProductTarget, RuleDraft, TieredSpendConfig } from "./types";
+import type {
+  AmountOffProductsConfig,
+  BundleConfig,
+  BuyXGetYConfig,
+  FreeShippingConfig,
+  ProductTarget,
+  RuleDraft,
+  TieredSpendConfig,
+} from "./types";
 
 export interface ValidationError {
   /** Dotted path into RuleDraft, e.g. "config.value.percent". */
@@ -55,6 +63,7 @@ export function validateRule(draft: RuleDraft, others: readonly OtherRule[] = []
   else if (c && c.type === "TIERED_SPEND") validateTieredSpend(c, add);
   else if (c && c.type === "BUY_X_GET_Y") validateBuyXGetY(c, add);
   else if (c && c.type === "BUNDLE") validateBundle(c, add);
+  else if (c && c.type === "FREE_SHIPPING") validateFreeShipping(c, add);
   else add("config.type", "Unsupported rule type.");
 
   // Overlap: two enabled rules with the same priority whose date ranges intersect.
@@ -231,4 +240,19 @@ function validateBundle(c: BundleConfig, add: Add) {
   else if (v?.kind === "FIXED_PRICE") validateAmountMinor("config.value", v.priceMinor, add);
   else add("config.value", "Choose how the bundle is discounted.");
   validateIntInRange("config.limitPerOrder", c.limitPerOrder, 1, MAX_BUNDLE_LIMIT_PER_ORDER, "the limit per order", add);
+}
+
+/** Free shipping: threshold > 0; percent in (0, 100]; optional max > 0; ALL or CHEAPEST. */
+function validateFreeShipping(c: FreeShippingConfig, add: Add) {
+  if (typeof c.currencyCode !== "string" || !CURRENCY.test(c.currencyCode)) add("config.currencyCode", "Currency code is invalid.");
+  if (typeof c.thresholdMinor !== "number" || !Number.isSafeInteger(c.thresholdMinor)) add("config.thresholdMinor", "Enter a spend threshold.");
+  else if (c.thresholdMinor <= 0) add("config.thresholdMinor", "Threshold must be greater than 0.");
+  else if (c.thresholdMinor > MAX_LINE_SUBTOTAL_MINOR) add("config.thresholdMinor", "Threshold is too large.");
+  validatePercent("config.percent", c.percent, add);
+  if (c.maxAmountMinor !== null) {
+    validateAmountMinor("config.maxAmountMinor", c.maxAmountMinor, add);
+  }
+  if (c.appliesTo !== "ALL" && c.appliesTo !== "CHEAPEST") {
+    add("config.appliesTo", "Choose whether the discount applies to all delivery options or only the cheapest.");
+  }
 }

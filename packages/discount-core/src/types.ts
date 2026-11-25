@@ -25,6 +25,17 @@ export interface CartLine {
   collectionIds: readonly string[];
 }
 
+export interface DeliveryOption {
+  handle: string;
+  /** Cost in the cart's currency, minor units. */
+  costMinor: number;
+}
+
+/** One delivery group and its options (Function shipping path / simulator). */
+export interface DeliveryGroup {
+  options: readonly DeliveryOption[];
+}
+
 export interface Cart {
   /** ISO 4217 code of the cart (presentment) currency. */
   currencyCode: string;
@@ -34,6 +45,8 @@ export interface Cart {
    * reads only `cart.cost.subtotalAmount`). Otherwise order rules sum the line subtotals.
    */
   subtotalMinor?: number;
+  /** Delivery groups for shipping rules. Absent or empty → no shipping discount. */
+  deliveryGroups?: readonly DeliveryGroup[];
 }
 
 export type AmountOffValue =
@@ -134,8 +147,33 @@ export interface BundleConfig {
   limitPerOrder: number;
 }
 
-/** Discriminated union; free shipping joins here next. */
-export type RuleConfig = AmountOffProductsConfig | TieredSpendConfig | BuyXGetYConfig | BundleConfig;
+/** Which delivery options a free-shipping rule discounts within each group. */
+export type FreeShippingAppliesTo = "ALL" | "CHEAPEST";
+
+/**
+ * Free shipping above a cart-subtotal threshold. Percentage of each targeted delivery
+ * option's cost (100 = free), optionally clamped by a max amount per option.
+ */
+export interface FreeShippingConfig {
+  type: "FREE_SHIPPING";
+  /** Shop base currency (ISO 4217) for threshold and optional max. */
+  currencyCode: string;
+  /** Cart subtotal threshold in the shop currency, minor units. Reached when subtotal >= threshold. */
+  thresholdMinor: number;
+  /** 0 < percent <= 100 (100 = free), at most 2 decimals. */
+  percent: number;
+  /** Optional max discount per delivery option, shop currency minor units; null = no max. */
+  maxAmountMinor: number | null;
+  /** ALL options in each group, or only the cheapest (ties: earlier option). */
+  appliesTo: FreeShippingAppliesTo;
+}
+
+export type RuleConfig =
+  | AmountOffProductsConfig
+  | TieredSpendConfig
+  | BuyXGetYConfig
+  | BundleConfig
+  | FreeShippingConfig;
 export type RuleType = RuleConfig["type"];
 
 export interface CombinesWith {
@@ -193,14 +231,28 @@ export interface OrderDiscount {
   percent: number | null;
 }
 
+export interface ShippingDiscount {
+  /** Delivery option handle to target. */
+  handle: string;
+  /** Discount on this option, cart currency minor units (> 0). */
+  amountMinor: number;
+  /**
+   * When set, Shopify can apply this as a percentage of the option cost.
+   * Null when a max amount clamped the discount (send as fixed amount instead).
+   */
+  percent: number | null;
+}
+
 export interface RuleResult {
   ruleId: string;
   discountClass: DiscountClass;
   message: string;
   currencyCode: string;
-  /** Product-class rules: per-line discounts. Always [] for order-class rules. */
+  /** Product-class rules: per-line discounts. Always [] for order/shipping rules. */
   lines: LineDiscount[];
   /** Order-class rules: the order discount, or null when no tier is reached. */
   order: OrderDiscount | null;
+  /** Shipping-class rules: per-option discounts. Always [] for product/order rules. */
+  shipping: ShippingDiscount[];
   totalMinor: number;
 }

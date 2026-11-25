@@ -6,7 +6,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  CAPS, bigCart, bogoMetafield, bundleMetafield, customLine, fixedEach, fixedOnce, fixture, line, linesInput, metafield, metafieldV1,
+  CAPS, bigCart, bogoMetafield, bundleMetafield, customLine, deliveryFixture, deliveryInput, deliveryOps,
+  fixedEach, fixedOnce, fixture, freeShippingMetafield, line, linesInput, metafield, metafieldV1,
   orderInput, pct, tieredMetafield, tierFixed, tierPct,
 } from "./lib/fixture-builders.mjs";
 
@@ -264,14 +265,80 @@ write("fixtures", "bundle-cap-plus-one.json", fixture(
   none,
 ));
 
-write("fixtures", "delivery-noop.json", {
-  payload: {
-    export: "cart-delivery-options-discounts-generate-run",
-    target: "cart.delivery-options.discounts.generate.run",
-    input: { discount: { discountClasses: ["SHIPPING"] } },
-    output: none,
-  },
-});
+// Free shipping (delivery-options target).
+const SHIP = freeShippingMetafield();
+const SHIP50 = freeShippingMetafield({ percent: 50, title: "50% off shipping over $100" });
+const SHIP_MAX = freeShippingMetafield({ percent: 100, maxAmountMinor: 300, title: "Free shipping max $3" });
+const SHIP_CHEAP = freeShippingMetafield({ appliesTo: "CHEAPEST", title: "Free cheapest shipping" });
+const shipGroups = (opts) => [opts.map(([handle, amount]) => ({ handle, amount }))];
+
+write("fixtures", "ship-below.json", deliveryFixture(
+  deliveryInput({ subtotal: "99.99", metafield: SHIP, groups: shipGroups([["standard", "5.00"], ["express", "15.00"]]) }),
+  none,
+));
+write("fixtures", "ship-at-threshold.json", deliveryFixture(
+  deliveryInput({ subtotal: "100.00", metafield: SHIP, groups: shipGroups([["standard", "5.00"], ["express", "15.00"]]) }),
+  deliveryOps([{ handle: "standard", percent: 100 }, { handle: "express", percent: 100 }]),
+));
+write("fixtures", "ship-above.json", deliveryFixture(
+  deliveryInput({ subtotal: "250.00", metafield: SHIP, groups: shipGroups([["standard", "5.00"]]) }),
+  deliveryOps([{ handle: "standard", percent: 100 }]),
+));
+write("fixtures", "ship-empty-options.json", deliveryFixture(
+  deliveryInput({ subtotal: "200.00", metafield: SHIP, groups: [[]] }),
+  none,
+));
+write("fixtures", "ship-percent-50.json", deliveryFixture(
+  deliveryInput({ subtotal: "100.00", metafield: SHIP50, groups: shipGroups([["standard", "10.00"]]) }),
+  deliveryOps([{ handle: "standard", percent: 50 }]),
+));
+write("fixtures", "ship-max-clamp.json", deliveryFixture(
+  deliveryInput({ subtotal: "100.00", metafield: SHIP_MAX, groups: shipGroups([["standard", "5.00"], ["express", "15.00"]]) }),
+  deliveryOps([{ handle: "standard", amount: 3.0 }, { handle: "express", amount: 3.0 }]),
+));
+write("fixtures", "ship-cheapest.json", deliveryFixture(
+  deliveryInput({ subtotal: "100.00", metafield: SHIP_CHEAP, groups: shipGroups([["express", "15.00"], ["standard", "5.00"], ["economy", "5.00"]]) }),
+  deliveryOps([{ handle: "standard", percent: 100 }]),
+));
+write("fixtures", "ship-two-groups.json", deliveryFixture(
+  deliveryInput({
+    subtotal: "100.00",
+    metafield: SHIP_CHEAP,
+    groups: [
+      [{ handle: "g1-std", amount: "4.00" }, { handle: "g1-exp", amount: "9.00" }],
+      [{ handle: "g2-std", amount: "6.00" }, { handle: "g2-exp", amount: "12.00" }],
+    ],
+  }),
+  deliveryOps([{ handle: "g1-std", percent: 100 }, { handle: "g2-std", percent: 100 }]),
+));
+write("fixtures", "ship-wrong-class.json", deliveryFixture(
+  deliveryInput({ subtotal: "200.00", discountClasses: ["PRODUCT"], metafield: SHIP, groups: shipGroups([["standard", "5.00"]]) }),
+  none,
+));
+write("fixtures", "ship-no-metafield.json", deliveryFixture(
+  deliveryInput({ subtotal: "200.00", groups: shipGroups([["standard", "5.00"]]) }),
+  none,
+));
+write("fixtures", "ship-jpy-at.json", deliveryFixture(
+  deliveryInput({
+    subtotal: "15000",
+    currencyCode: "JPY",
+    rate: "150.0",
+    metafield: SHIP,
+    groups: shipGroups([["standard", "750"]]),
+  }),
+  deliveryOps([{ handle: "standard", percent: 100 }]),
+));
+write("fixtures", "ship-kwd-at.json", deliveryFixture(
+  deliveryInput({
+    subtotal: "30.700",
+    currencyCode: "KWD",
+    rate: "0.307",
+    metafield: SHIP50,
+    groups: shipGroups([["standard", "2.000"]]),
+  }),
+  deliveryOps([{ handle: "standard", percent: 50 }]),
+));
 
 // Perf: worst case (every line eligible) at the cap, for both value kinds; plus the
 // original 200-line and 250×999 carts (above the cap they return early).
@@ -311,5 +378,13 @@ for (const n of [...new Set([1, 15, BUNDLE_CAP, 30, 31])]) {
     const name = n === BUNDLE_CAP ? `cap-bundle-qty${qty}.json` : `bundle-${n}-lines-qty${qty}.json`;
     write("perf", name, fixture(linesInput({ metafield: bundlePerfMf, lines: bundleLines(n, qty) }), null));
   }
+}
+// Free-shipping perf: 1 and 10 delivery options (no cart-line cap; lines are not read).
+for (const n of [1, 10]) {
+  const opts = Array.from({ length: n }, (_, i) => ({ handle: `rate-${i}`, amount: (5 + i).toFixed(2) }));
+  write("perf", `ship-${n}-options.json`, deliveryFixture(
+    deliveryInput({ subtotal: "200.00", metafield: SHIP, groups: [opts] }),
+    null,
+  ));
 }
 console.log(`fixtures written (caps: ${JSON.stringify(CAPS)})`);

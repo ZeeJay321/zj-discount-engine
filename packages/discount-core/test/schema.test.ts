@@ -174,11 +174,14 @@ describe("schema v4: bundles", () => {
     value: { kind: "FIXED_PRICE" as const, priceMinor: 5000 },
     limitPerOrder: 3,
   };
-  it("round-trips a bundle (v4, PRODUCT class, no collection variable)", () => {
+  it("round-trips a bundle (current version, PRODUCT class, no collection variable)", () => {
     const payload = toMetafieldPayload({ id: "b", title: "Kit", config: bundle });
-    expect(payload).toMatchObject({ schemaVersion: 4, collectionIds: [] });
+    expect(payload).toMatchObject({ schemaVersion: RULE_CONFIG_SCHEMA_VERSION, collectionIds: [] });
     expect(parseMetafieldPayload(JSON.parse(JSON.stringify(payload)))).toEqual({ ok: true, value: payload });
     expect(discountClassesFor({ config: bundle })).toEqual(["PRODUCT"]);
+  });
+  it("still reads a v4 bundle payload", () => {
+    expect(parseMetafieldPayload({ schemaVersion: 4, ruleId: "b", title: "Kit", collectionIds: [], config: bundle }).ok).toBe(true);
   });
   it.each([
     ["percentage", { kind: "PERCENTAGE", percent: 20 }],
@@ -210,5 +213,39 @@ describe("schema v4: bundles", () => {
     const { resourceIdsOf } = await import("../src");
     expect(resourceIdsOf(bundle)).toEqual(["gid://shopify/Product/1", "gid://shopify/ProductVariant/22"]);
     expect(resourceIdsOf({ type: "AMOUNT_OFF_PRODUCTS", target: { kind: "COLLECTIONS", collectionIds: ["c"] }, value: { kind: "PERCENTAGE", percent: 1 } })).toEqual(["c"]);
+  });
+});
+
+describe("schema v5: free shipping", () => {
+  const ship = {
+    type: "FREE_SHIPPING" as const,
+    currencyCode: "USD",
+    thresholdMinor: 10000,
+    percent: 100,
+    maxAmountMinor: null as number | null,
+    appliesTo: "ALL" as const,
+  };
+  it("round-trips free shipping (v5, SHIPPING class)", () => {
+    const payload = toMetafieldPayload({ id: "s", title: "Free ship", config: ship });
+    expect(payload).toMatchObject({ schemaVersion: 5, collectionIds: [] });
+    expect(parseMetafieldPayload(JSON.parse(JSON.stringify(payload)))).toEqual({ ok: true, value: payload });
+    expect(discountClassesFor({ config: ship })).toEqual(["SHIPPING"]);
+  });
+  it("round-trips with a max amount and CHEAPEST", () => {
+    const config = { ...ship, percent: 50, maxAmountMinor: 500, appliesTo: "CHEAPEST" as const };
+    const payload = toMetafieldPayload({ id: "s", title: "Ship", config });
+    expect(parseMetafieldPayload(payload)).toEqual({ ok: true, value: payload });
+  });
+  it("rejects free shipping inside a v4 payload", () => {
+    expect(parseMetafieldPayload({ schemaVersion: 4, ruleId: "r", title: "t", collectionIds: [], config: ship }).ok).toBe(false);
+  });
+  it.each([
+    ["no currency", { ...ship, currencyCode: undefined }],
+    ["bad threshold", { ...ship, thresholdMinor: 1.5 }],
+    ["bad percent", { ...ship, percent: "100" }],
+    ["bad max", { ...ship, maxAmountMinor: 1.5 }],
+    ["bad appliesTo", { ...ship, appliesTo: "SOME" }],
+  ])("rejects free shipping with %s", (_n, config) => {
+    expect(parseMetafieldPayload({ schemaVersion: 5, ruleId: "r", title: "t", collectionIds: [], config }).ok).toBe(false);
   });
 });

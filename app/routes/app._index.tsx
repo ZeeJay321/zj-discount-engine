@@ -44,9 +44,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       appliesTo:
         r.config.type === "TIERED_SPEND"
           ? "Whole order"
-          : resourceIdsOf(r.config)
-              .map((id) => titles[id] ?? id)
-              .join(r.config.type === "BUNDLE" ? " + " : ", "),
+          : r.config.type === "FREE_SHIPPING"
+            ? r.config.appliesTo === "CHEAPEST"
+              ? "Cheapest shipping"
+              : "All shipping options"
+            : resourceIdsOf(r.config)
+                .map((id) => titles[id] ?? id)
+                .join(r.config.type === "BUNDLE" ? " + " : ", "),
       starts: formatDay(r.startsAt, store.timezone),
       ends: formatDay(r.endsAt, store.timezone),
       priority: r.priority,

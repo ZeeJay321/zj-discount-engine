@@ -2,6 +2,7 @@ import {
   currencyExponent,
   type BundleConfig,
   type BuyXGetYConfig,
+  type FreeShippingConfig,
   type RuleConfig,
   type RuleType,
   type TieredSpendConfig,
@@ -23,6 +24,7 @@ export const RULE_TYPE_LABELS: Record<RuleType, string> = {
   TIERED_SPEND: "Tiered spend",
   BUY_X_GET_Y: "Buy X get Y",
   BUNDLE: "Bundle",
+  FREE_SHIPPING: "Free shipping",
 };
 
 /**
@@ -70,10 +72,24 @@ export function describeTiers(config: TieredSpendConfig): string[] {
   });
 }
 
+/** e.g. "Free shipping on orders of $100.00 or more" / "50% off shipping…". */
+export function describeFreeShipping(c: FreeShippingConfig): string {
+  const spend = Number.isSafeInteger(c.thresholdMinor) ? formatMoneyMinor(c.thresholdMinor, c.currencyCode) : "?";
+  const deal =
+    c.percent === 100 ? "Free shipping" : `${Number.isFinite(c.percent) ? c.percent : "?"}% off shipping`;
+  const max =
+    c.maxAmountMinor !== null && Number.isSafeInteger(c.maxAmountMinor)
+      ? ` (max ${formatMoneyMinor(c.maxAmountMinor, c.currencyCode)} per option)`
+      : "";
+  const which = c.appliesTo === "CHEAPEST" ? ", cheapest option only" : "";
+  return `${deal} on orders of ${spend} or more${max}${which}`;
+}
+
 export function describeValue(config: RuleConfig, titles: Record<string, string> = {}): string {
   if (config.type === "TIERED_SPEND") return describeTiers(config).join(" · ");
   if (config.type === "BUY_X_GET_Y") return describeBuyXGetY(config);
   if (config.type === "BUNDLE") return describeBundle(config, titles);
+  if (config.type === "FREE_SHIPPING") return describeFreeShipping(config);
   const v = config.value;
   if (v.kind === "PERCENTAGE") return `${v.percent}% off`;
   return `${formatMoneyMinor(v.amountMinor, v.currencyCode)} off ${v.appliesToEachItem ? "each item" : "once per order"}`;

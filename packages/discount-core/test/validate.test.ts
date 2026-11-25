@@ -267,3 +267,41 @@ describe("validateRule — bundles", () => {
     expect(validateRule(bundle(), [other]).map((e) => e.field)).toContain("priority");
   });
 });
+
+describe("validateRule — free shipping", () => {
+  const ship = (o: Record<string, unknown> = {}) =>
+    draft({
+      config: {
+        type: "FREE_SHIPPING",
+        currencyCode: "USD",
+        thresholdMinor: 10000,
+        percent: 100,
+        maxAmountMinor: null,
+        appliesTo: "ALL",
+        ...o,
+      } as RuleDraft["config"],
+    });
+  const f = (d: RuleDraft) => validateRule(d).map((e) => e.field);
+
+  it("accepts 100%, partial %, max amount, and CHEAPEST", () => {
+    expect(validateRule(ship())).toEqual([]);
+    expect(validateRule(ship({ percent: 50, maxAmountMinor: 500, appliesTo: "CHEAPEST" }))).toEqual([]);
+    expect(validateRule(ship({ percent: 0.01 }))).toEqual([]);
+  });
+
+  it.each([
+    ["threshold 0", { thresholdMinor: 0 }, "config.thresholdMinor"],
+    ["threshold negative", { thresholdMinor: -1 }, "config.thresholdMinor"],
+    ["percent 0", { percent: 0 }, "config.percent"],
+    ["percent > 100", { percent: 101 }, "config.percent"],
+    ["max 0", { maxAmountMinor: 0 }, "config.maxAmountMinor"],
+    ["bad appliesTo", { appliesTo: "SOME" }, "config.appliesTo"],
+    ["bad currency", { currencyCode: "usd" }, "config.currencyCode"],
+  ])("rejects %s", (_n, o, field) => expect(f(ship(o))).toContain(field));
+
+  it("same-priority overlap with another free-shipping rule", () => {
+    const other = { id: "o", title: "Other ship", enabled: true, priority: 10, startsAt: "2026-12-01T00:00:00.000Z", endsAt: null };
+    expect(validateRule(ship(), [other]).map((e) => e.field)).toContain("priority");
+    expect(validateRule(ship(), [{ ...other, priority: 11 }])).toEqual([]);
+  });
+});

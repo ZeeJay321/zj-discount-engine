@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Form } from "react-router";
 import { useAppNavigate } from "./AppLink";
 import { maxCartLinesFor, MAX_TIERS, MIN_TIERS, validateRule, type OtherRule, type RuleType } from "@zj/discount-core";
-import { describeBundle, describeBuyXGetY, describeTiers, RULE_TYPE_LABELS } from "../lib/rule-display";
+import { describeBundle, describeBuyXGetY, describeFreeShipping, describeTiers, RULE_TYPE_LABELS } from "../lib/rule-display";
 import { BundleEditor, type ComponentRow } from "./BundleEditor";
+import { Checkbox } from "./Checkbox";
 import { Select } from "./Select";
 import { TargetPicker, type TargetKind } from "./TargetPicker";
 import { errorsByFormField, parseRuleForm, type FormContext } from "../lib/rule-form";
@@ -30,6 +31,9 @@ export interface RuleFormValues {
   components: ComponentRow[];
   bundleValueKind: "PERCENTAGE" | "FIXED_AMOUNT" | "FIXED_PRICE";
   bundleValue: string;
+  shipThreshold: string;
+  shipMaxAmount: string;
+  shipAppliesTo: "ALL" | "CHEAPEST";
   combinesOrder: boolean;
   combinesProduct: boolean;
   combinesShipping: boolean;
@@ -50,14 +54,12 @@ interface Props {
   isEdit: boolean;
 }
 
-const checked = (on: boolean) => (on ? { checked: true } : {});
 let tierKeySeq = 0;
 const newTierKey = () => `tier-${++tierKeySeq}`;
 
-
-
 const asKind = (v: string) => (v === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE") as "PERCENTAGE" | "FIXED_AMOUNT";
-const asType = (v: string) => (v === "TIERED_SPEND" || v === "BUY_X_GET_Y" || v === "BUNDLE" ? v : "AMOUNT_OFF_PRODUCTS") as RuleType;
+const asType = (v: string) =>
+  (v === "TIERED_SPEND" || v === "BUY_X_GET_Y" || v === "BUNDLE" || v === "FREE_SHIPPING" ? v : "AMOUNT_OFF_PRODUCTS") as RuleType;
 
 export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, submitting, submitLabel, isEdit }: Props) {
   const go = useAppNavigate();
@@ -69,6 +71,7 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
   const [valueKind, setValueKind] = useState(values.valueKind);
   const [tierKind, setTierKind] = useState(values.tierKind);
   const [appliesTo, setAppliesTo] = useState(values.appliesTo);
+  const [shipAppliesTo, setShipAppliesTo] = useState(values.shipAppliesTo);
   const [bundleTitles, setBundleTitles] = useState<Record<string, string>>(resourceTitles);
   const [componentCount, setComponentCount] = useState(values.components.length);
   const cap = maxCartLinesFor(ruleType);
@@ -86,17 +89,12 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
   useEffect(() => {
     const form = formRef.current;
     if (!form) return;
-    form.querySelectorAll("s-text-field, s-number-field, s-date-field, s-checkbox").forEach((node) => {
+    form.querySelectorAll("s-text-field, s-number-field, s-date-field").forEach((node) => {
       if (initialised.current.has(node)) return;
       initialised.current.add(node);
-      const el = node as unknown as { value?: string; checked?: boolean };
-      if (node.tagName.toLowerCase() === "s-checkbox") {
-        const want = node.hasAttribute("checked");
-        if (el.checked !== want) el.checked = want;
-      } else {
-        const attr = node.getAttribute("value");
-        if (attr !== null && el.value !== attr) el.value = attr;
-      }
+      const el = node as unknown as { value?: string };
+      const attr = node.getAttribute("value");
+      if (attr !== null && el.value !== attr) el.value = attr;
     });
   });
 
@@ -124,7 +122,9 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
             ? [describeBuyXGetY(c)]
             : c.type === "BUNDLE"
               ? [describeBundle(c, bundleTitles)]
-              : [],
+              : c.type === "FREE_SHIPPING"
+                ? [describeFreeShipping(c)]
+                : [],
       );
       if (triedSubmit) setErrors(errorsByFormField(res.all));
     };
@@ -196,6 +196,7 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
                 { value: "TIERED_SPEND", label: `${RULE_TYPE_LABELS.TIERED_SPEND} (spend X, get Y off the order)` },
                 { value: "BUY_X_GET_Y", label: `${RULE_TYPE_LABELS.BUY_X_GET_Y} (cheapest units discounted)` },
                 { value: "BUNDLE", label: `${RULE_TYPE_LABELS.BUNDLE} (these items together get a price off)` },
+                { value: "FREE_SHIPPING", label: `${RULE_TYPE_LABELS.FREE_SHIPPING} (above a cart subtotal)` },
               ]}
             />
           )}
@@ -305,7 +306,7 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
             </s-stack>
           </s-section>
         </>
-      ) : ruleType !== "TIERED_SPEND" ? null : (
+      ) : ruleType === "TIERED_SPEND" ? (
         <s-section heading="Tiers">
           <s-stack direction="block" gap="base">
             <s-paragraph>
@@ -355,7 +356,66 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
             )}
           </s-stack>
         </s-section>
-      )}
+      ) : ruleType === "FREE_SHIPPING" ? (
+        <s-section heading="Free shipping">
+          <s-stack direction="block" gap="base">
+            <s-paragraph>
+              When the cart subtotal reaches the threshold (exactly at counts), a shipping discount applies to delivery
+              options. No cart-line limit — this rule does not read cart lines.
+            </s-paragraph>
+            <s-text-field
+              label={`Cart subtotal threshold (${cur})`}
+              name="shipThreshold"
+              value={values.shipThreshold}
+              placeholder="100.00"
+              details="In the store's currency; converted at checkout for other currencies."
+              {...err("shipThreshold")}
+            />
+            <s-stack direction="inline" gap="base">
+              <s-number-field
+                label="Shipping discount"
+                name="bogoPercent"
+                value={values.bogoPercent}
+                min={0.01}
+                max={100}
+                step={0.01}
+                suffix="%"
+                ref={bogoPercentRef}
+                {...err("bogoPercent")}
+              />
+              <s-button variant="tertiary" onClick={makeFree}>
+                Make it free
+              </s-button>
+            </s-stack>
+            <s-text-field
+              label={`Maximum discount per option (${cur}, optional)`}
+              name="shipMaxAmount"
+              value={values.shipMaxAmount}
+              placeholder="Leave blank for no maximum"
+              {...err("shipMaxAmount")}
+            />
+            <Select
+              label="Apply to"
+              name="shipAppliesTo"
+              value={shipAppliesTo}
+              onChange={(v) => setShipAppliesTo(v === "CHEAPEST" ? "CHEAPEST" : "ALL")}
+              error={errors.shipAppliesTo}
+              options={[
+                { value: "ALL", label: "All delivery options" },
+                { value: "CHEAPEST", label: "Cheapest option in each delivery group" },
+              ]}
+            />
+            {preview.length > 0 && (
+              <s-box padding="base" background="subdued" borderRadius="base">
+                <s-stack direction="block" gap="small-300">
+                  <s-text type="strong">Preview</s-text>
+                  <s-text>{preview[0]}</s-text>
+                </s-stack>
+              </s-box>
+            )}
+          </s-stack>
+        </s-section>
+      ) : null}
 
       <s-section heading="Active dates">
         <s-stack direction="block" gap="base">
@@ -367,9 +427,9 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
       <s-section heading="Combinations">
         <s-stack direction="block" gap="small-200">
           <s-text color="subdued">This discount can be combined with:</s-text>
-          <s-checkbox label="Product discounts" name="combinesProduct" value="on" {...checked(values.combinesProduct)} />
-          <s-checkbox label="Order discounts" name="combinesOrder" value="on" {...checked(values.combinesOrder)} />
-          <s-checkbox label="Shipping discounts" name="combinesShipping" value="on" {...checked(values.combinesShipping)} />
+          <Checkbox label="Product discounts" name="combinesProduct" checked={values.combinesProduct} />
+          <Checkbox label="Order discounts" name="combinesOrder" checked={values.combinesOrder} />
+          <Checkbox label="Shipping discounts" name="combinesShipping" checked={values.combinesShipping} />
         </s-stack>
       </s-section>
 

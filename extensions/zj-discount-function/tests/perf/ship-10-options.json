@@ -1,0 +1,105 @@
+{
+  "payload": {
+    "export": "cart-delivery-options-discounts-generate-run",
+    "target": "cart.delivery-options.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "200.00",
+            "currencyCode": "USD"
+          }
+        },
+        "deliveryGroups": [
+          {
+            "deliveryOptions": [
+              {
+                "handle": "rate-0",
+                "cost": {
+                  "amount": "5.00"
+                }
+              },
+              {
+                "handle": "rate-1",
+                "cost": {
+                  "amount": "6.00"
+                }
+              },
+              {
+                "handle": "rate-2",
+                "cost": {
+                  "amount": "7.00"
+                }
+              },
+              {
+                "handle": "rate-3",
+                "cost": {
+                  "amount": "8.00"
+                }
+              },
+              {
+                "handle": "rate-4",
+                "cost": {
+                  "amount": "9.00"
+                }
+              },
+              {
+                "handle": "rate-5",
+                "cost": {
+                  "amount": "10.00"
+                }
+              },
+              {
+                "handle": "rate-6",
+                "cost": {
+                  "amount": "11.00"
+                }
+              },
+              {
+                "handle": "rate-7",
+                "cost": {
+                  "amount": "12.00"
+                }
+              },
+              {
+                "handle": "rate-8",
+                "cost": {
+                  "amount": "13.00"
+                }
+              },
+              {
+                "handle": "rate-9",
+                "cost": {
+                  "amount": "14.00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "SHIPPING"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 5,
+            "ruleId": "ship_1",
+            "title": "Free shipping over $100",
+            "collectionIds": [],
+            "config": {
+              "type": "FREE_SHIPPING",
+              "currencyCode": "USD",
+              "thresholdMinor": 10000,
+              "percent": 100,
+              "maxAmountMinor": null,
+              "appliesTo": "ALL"
+            }
+          }
+        }
+      }
+    },
+    "output": null
+  }
+}

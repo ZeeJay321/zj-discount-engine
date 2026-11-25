@@ -157,6 +157,7 @@ describe("huge carts and the line cap", () => {
     const { MAX_CART_LINES_BY_TYPE: caps, maxCartLinesFor } = await import("../src");
     for (const v of Object.values(caps)) expect(Number.isInteger(v) && v > 0).toBe(true);
     expect(maxCartLinesFor("TIERED_SPEND")).toBeNull();
+    expect(maxCartLinesFor("FREE_SHIPPING")).toBeNull();
     expect(maxCartLinesFor("BUNDLE")).toBe(caps.BUNDLE);
   });
 

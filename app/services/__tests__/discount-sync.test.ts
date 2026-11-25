@@ -562,7 +562,7 @@ describe("bundle rules", () => {
     expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
     const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
     expect(sent.automaticAppDiscount.discountClasses).toEqual(["PRODUCT"]);
-    expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value)).toMatchObject({ schemaVersion: 4, collectionIds: [], config: bundle });
+    expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value)).toMatchObject({ schemaVersion: 5, collectionIds: [], config: bundle });
   });
 
   it.each([
@@ -588,5 +588,47 @@ describe("bundle rules", () => {
     const res = await saveRule(t.deps, draft({ config: { ...bundle, components: [bundle.type === "BUNDLE" ? bundle.components[0] : null] } as RuleDraft["config"] }));
     expect(res.ok).toBe(false);
     expect(t.calls).toHaveLength(0);
+  });
+});
+
+describe("saveRule — free shipping", () => {
+  const ship: RuleDraft["config"] = {
+    type: "FREE_SHIPPING",
+    currencyCode: "USD",
+    thresholdMinor: 10000,
+    percent: 100,
+    maxAmountMinor: null,
+    appliesTo: "ALL",
+  };
+
+  it("creates a SHIPPING-class discount with schema v5", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    const res = await saveRule(t.deps, draft({ title: "Free ship $100", config: ship }));
+    expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.discountClasses).toEqual(["SHIPPING"]);
+    expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value)).toMatchObject({
+      schemaVersion: 5,
+      collectionIds: [],
+      config: ship,
+    });
+  });
+
+  it.each([
+    [{ orderDiscounts: true, productDiscounts: false, shippingDiscounts: true }],
+    [{ orderDiscounts: false, productDiscounts: true, shippingDiscounts: false }],
+  ])("send combinesWith exactly as chosen (incl. shippingDiscounts): %j", async (combinesWith) => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    await saveRule(t.deps, draft({ config: ship, combinesWith }));
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.combinesWith).toEqual(combinesWith);
+  });
+
+  it("type is fixed after creation", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    const a = await saveRule(t.deps, draft({ config: ship }));
+    if (!a.ok) throw new Error("setup");
+    const res = await saveRule(t.deps, draft({ id: a.rule.id }));
+    expect(res.ok).toBe(false);
   });
 });

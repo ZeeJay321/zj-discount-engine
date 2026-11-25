@@ -1,0 +1,95 @@
+{
+  "payload": {
+    "export": "cart-delivery-options-discounts-generate-run",
+    "target": "cart.delivery-options.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "100.00",
+            "currencyCode": "USD"
+          }
+        },
+        "deliveryGroups": [
+          {
+            "deliveryOptions": [
+              {
+                "handle": "standard",
+                "cost": {
+                  "amount": "5.00"
+                }
+              },
+              {
+                "handle": "express",
+                "cost": {
+                  "amount": "15.00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "SHIPPING"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 5,
+            "ruleId": "ship_1",
+            "title": "Free shipping max $3",
+            "collectionIds": [],
+            "config": {
+              "type": "FREE_SHIPPING",
+              "currencyCode": "USD",
+              "thresholdMinor": 10000,
+              "percent": 100,
+              "maxAmountMinor": 300,
+              "appliesTo": "ALL"
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "deliveryDiscountsAdd": {
+            "selectionStrategy": "ALL",
+            "candidates": [
+              {
+                "targets": [
+                  {
+                    "deliveryOption": {
+                      "handle": "standard"
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 3
+                  }
+                }
+              },
+              {
+                "targets": [
+                  {
+                    "deliveryOption": {
+                      "handle": "express"
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 3
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

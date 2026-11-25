@@ -1,5 +1,27 @@
+# Minimal shipping query: cart subtotal + each delivery option's handle and cost.
+# No cart lines (free shipping has no cart-line cap).
 query DeliveryInput {
+  presentmentCurrencyRate
+  cart {
+    cost {
+      subtotalAmount {
+        amount
+        currencyCode
+      }
+    }
+    deliveryGroups {
+      deliveryOptions {
+        handle
+        cost {
+          amount
+        }
+      }
+    }
+  }
   discount {
     discountClasses
+    metafield(namespace: "$app", key: "rule-config") {
+      jsonValue
+    }
   }
 }

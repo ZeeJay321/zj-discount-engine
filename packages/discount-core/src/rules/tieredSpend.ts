@@ -41,6 +41,7 @@ export function evaluateTieredSpend(
     currencyCode: cart.currencyCode,
     lines: [],
     order: null,
+    shipping: [],
     totalMinor: 0,
   };
   if (subtotal <= 0) return base;

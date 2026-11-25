@@ -32,6 +32,7 @@ export function evaluateBuyXGetY(
     currencyCode: cart.currencyCode,
     lines: [],
     order: null,
+    shipping: [],
     totalMinor: 0,
   };
   const X = c.buyQuantity;

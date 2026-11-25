@@ -11,6 +11,7 @@ import {
   type Cart,
   type CartLine,
   type BundleComponent,
+  type DeliveryGroup,
   type ProductTarget,
   type RuleResult,
 } from "@zj/discount-core";
@@ -142,4 +143,72 @@ export function toOrderOperations(result: RuleResult) {
       },
     },
   ];
+}
+
+/** Structural view of the delivery-options input. */
+export interface DeliveryInputLike {
+  presentmentCurrencyRate: string | number;
+  cart: {
+    cost: { subtotalAmount: { amount: string | number; currencyCode: string } };
+    deliveryGroups: ReadonlyArray<{
+      deliveryOptions: ReadonlyArray<{
+        handle: string;
+        cost: { amount: string | number };
+      }>;
+    }>;
+  };
+}
+
+/** Shipping rules: cart subtotal + delivery option handles and costs. No lines. */
+export function toCoreDeliveryCart(input: DeliveryInputLike): Cart {
+  const { amount, currencyCode } = input.cart.cost.subtotalAmount;
+  const exp = currencyExponent(currencyCode);
+  let subtotalMinor = 0;
+  try {
+    subtotalMinor = decimalToMinor(amount, exp);
+  } catch {
+    subtotalMinor = 0;
+  }
+  const deliveryGroups: DeliveryGroup[] = [];
+  const src = input.cart.deliveryGroups ?? [];
+  for (let g = 0; g < src.length; g++) {
+    const options = [];
+    const opts = src[g].deliveryOptions ?? [];
+    for (let i = 0; i < opts.length; i++) {
+      const o = opts[i];
+      let costMinor = 0;
+      try {
+        costMinor = decimalToMinor(o.cost.amount, exp);
+      } catch {
+        continue;
+      }
+      options.push({ handle: o.handle, costMinor });
+    }
+    deliveryGroups.push({ options });
+  }
+  return { currencyCode, lines: [], subtotalMinor, deliveryGroups };
+}
+
+/**
+ * Shipping-class operations: one candidate per discounted delivery option. Percentage
+ * when the max did not clamp; otherwise the exact fixed amount. selectionStrategy is
+ * always ALL (the only strategy Shopify exposes for delivery discounts).
+ */
+export function toDeliveryOperations(result: RuleResult) {
+  const n = result.shipping.length;
+  if (n === 0) return [];
+  const exp = currencyExponent(result.currencyCode);
+  const candidates = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const s = result.shipping[i];
+    const value =
+      s.percent !== null
+        ? { percentage: { value: s.percent } }
+        : { fixedAmount: { amount: minorToNumber(s.amountMinor, exp) } };
+    candidates[i] = {
+      targets: [{ deliveryOption: { handle: s.handle } }],
+      value,
+    };
+  }
+  return [{ deliveryDiscountsAdd: { candidates, selectionStrategy: "ALL" as const } }];
 }

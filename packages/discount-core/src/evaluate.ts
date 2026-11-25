@@ -2,6 +2,7 @@ import { MAX_CART_LINES_BY_TYPE } from "./limits";
 import { evaluateAmountOffProducts } from "./rules/amountOffProducts";
 import { evaluateBundle } from "./rules/bundle";
 import { evaluateBuyXGetY } from "./rules/buyXGetY";
+import { evaluateFreeShipping } from "./rules/freeShipping";
 import { evaluateTieredSpend } from "./rules/tieredSpend";
 import type { Cart, DiscountClass, EvaluableRule, EvaluateContext, RuleConfig, RuleResult } from "./types";
 
@@ -25,6 +26,9 @@ export function evaluateRule(rule: EvaluableRule, cart: Cart, ctx: EvaluateConte
     case "TIERED_SPEND":
       // Order rules read only the subtotal, so they have no cart-size cap.
       return evaluateTieredSpend({ ...rule, config: rule.config }, cart, ctx);
+    case "FREE_SHIPPING":
+      // Shipping rules read subtotal + delivery options only; no cart-line cap.
+      return evaluateFreeShipping({ ...rule, config: rule.config }, cart, ctx);
     default: {
       const unknown: never = rule.config;
       throw new Error(`Unsupported rule type: ${String((unknown as { type?: unknown }).type)}`);
@@ -40,6 +44,7 @@ function emptyResult(rule: EvaluableRule, cart: Cart): RuleResult {
     currencyCode: cart.currencyCode,
     lines: [],
     order: null,
+    shipping: [],
     totalMinor: 0,
   };
 }
@@ -53,6 +58,8 @@ export function discountClassFor(config: RuleConfig): DiscountClass {
       return "PRODUCT";
     case "TIERED_SPEND":
       return "ORDER";
+    case "FREE_SHIPPING":
+      return "SHIPPING";
   }
 }
 

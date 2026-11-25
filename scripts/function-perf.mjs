@@ -20,26 +20,34 @@ const tmp = mkdtempSync(join(tmpdir(), "zj-perf-"));
 const BASE_LIMIT = 11_000_000;
 const limitFor = (lines) => (lines <= 200 ? BASE_LIMIT : Math.round((BASE_LIMIT * lines) / 200));
 
-function instructions(input) {
+const LINES_EXPORT = "cart-lines-discounts-generate-run";
+const DELIVERY_EXPORT = "cart-delivery-options-discounts-generate-run";
+
+function instructions(input, exportName = LINES_EXPORT) {
   const file = join(tmp, "input.json");
   writeFileSync(file, JSON.stringify(input));
   const out = execFileSync(
     "npx",
     ["shopify", "app", "function", "run", "--no-input", "--json", "--path", fnDir,
-      "--export", "cart-lines-discounts-generate-run", "--input", file],
+      "--export", exportName, "--input", file],
     { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] },
   );
   return JSON.parse(out.slice(out.indexOf("{"))).instructions;
 }
 
-function report(name, input) {
-  const lines = input.cart.lines?.length ?? 0;
-  const n = instructions(input);
-  const limit = limitFor(lines);
+function report(name, input, exportName = LINES_EXPORT) {
+  const lines = input.cart?.lines?.length ?? 0;
+  const options = (input.cart?.deliveryGroups ?? []).reduce((a, g) => a + (g.deliveryOptions?.length ?? 0), 0);
+  const n = instructions(input, exportName);
+  const limit = limitFor(Math.max(lines, 1));
   const share = (n / limit) * 100;
   const bytes = Buffer.byteLength(JSON.stringify(input));
+  const size =
+    exportName === DELIVERY_EXPORT
+      ? `opts=${String(options).padStart(3)}`
+      : `lines=${String(lines).padStart(3)}`;
   console.log(
-    `${name.padEnd(36)} lines=${String(lines).padStart(3)} input=${String(bytes).padStart(6)}B ` +
+    `${name.padEnd(36)} ${size} input=${String(bytes).padStart(6)}B ` +
       `instructions=${String(n).padStart(11)} limit=${String(limit).padStart(8)} (${share.toFixed(1)}%)`,
   );
   return share;
@@ -50,7 +58,10 @@ const perfInputs = () =>
   readdirSync(perfDir)
     .filter((f) => f.endsWith(".json"))
     .sort()
-    .map((f) => [f.replace(/\.json$/, ""), JSON.parse(readFileSync(join(perfDir, f), "utf8")).payload.input]);
+    .map((f) => {
+      const payload = JSON.parse(readFileSync(join(perfDir, f), "utf8")).payload;
+      return [f.replace(/\.json$/, ""), payload.input, payload.export ?? LINES_EXPORT];
+    });
 
 if (args.includes("--sweep")) {
   // Worst case: every line eligible, real-length ids (parsing cost depends on string
@@ -100,18 +111,18 @@ if (args.includes("--sweep")) {
 } else if (args.includes("--gate")) {
   const max = Number(args[args.indexOf("--gate") + 1] ?? 55);
   let failed = false;
-  for (const [name, input] of perfInputs().filter(([n]) => n.startsWith("cap-"))) {
-    if (report(name, input) > max) failed = true;
+  for (const [name, input, exp] of perfInputs().filter(([n]) => n.startsWith("cap-"))) {
+    if (report(name, input, exp) > max) failed = true;
   }
   if (failed) {
     console.error(`FAIL: a cap fixture is above ${max}% of the instruction limit`);
     process.exit(1);
   }
 } else {
-  for (const [name, input] of perfInputs()) {
-    report(name, input);
+  for (const [name, input, exp] of perfInputs()) {
+    report(name, input, exp);
     if (args.includes("--breakdown")) {
-      report(`${name} (no rule)`, { ...input, discount: { ...input.discount, metafield: null } });
+      report(`${name} (no rule)`, { ...input, discount: { ...input.discount, metafield: null } }, exp);
     }
   }
   if (args.includes("--breakdown")) {

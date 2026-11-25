@@ -1,0 +1,38 @@
+{
+  "payload": {
+    "export": "cart-delivery-options-discounts-generate-run",
+    "target": "cart.delivery-options.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "200.00",
+            "currencyCode": "USD"
+          }
+        },
+        "deliveryGroups": [
+          {
+            "deliveryOptions": [
+              {
+                "handle": "standard",
+                "cost": {
+                  "amount": "5.00"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "SHIPPING"
+        ],
+        "metafield": null
+      }
+    },
+    "output": {
+      "operations": []
+    }
+  }
+}

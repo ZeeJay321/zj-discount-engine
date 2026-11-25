@@ -9,6 +9,7 @@ import type {
   BundleComponent,
   BundleValue,
   DiscountClass,
+  FreeShippingAppliesTo,
   ProductTarget,
   RuleConfig,
   RuleDraft,
@@ -21,14 +22,16 @@ import type {
  * v2: adds the TIERED_SPEND type (same top-level shape).
  * v3: adds BUY_X_GET_Y and PRODUCTS (product-list) targets.
  * v4: adds BUNDLE.
- * Readers accept both; writers always write the current version. Discounts saved
- * with v1 keep working until they are next edited.
+ * v5: adds FREE_SHIPPING.
+ * Readers accept every supported version; writers always write the current version.
+ * Discounts saved with an older version keep working until they are next edited.
  */
-export const RULE_CONFIG_SCHEMA_VERSION = 4;
-export const SUPPORTED_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3, 4];
+export const RULE_CONFIG_SCHEMA_VERSION = 5;
+export const SUPPORTED_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3, 4, 5];
 
 /** Oldest schema version that can describe this config (older payloads can't contain it). */
 export function minSchemaVersion(config: RuleConfig): number {
+  if (config.type === "FREE_SHIPPING") return 5;
   if (config.type === "BUNDLE") return 4;
   if (config.type === "BUY_X_GET_Y") return 3;
   if (config.type === "AMOUNT_OFF_PRODUCTS" && config.target.kind === "PRODUCTS") return 3;
@@ -117,6 +120,7 @@ export function parseConfig(c: unknown): ParseResult<RuleConfig> {
   if (c.type === "TIERED_SPEND") return parseTiered(c);
   if (c.type === "BUY_X_GET_Y") return parseBuyXGetY(c);
   if (c.type === "BUNDLE") return parseBundle(c);
+  if (c.type === "FREE_SHIPPING") return parseFreeShipping(c);
   if (c.type !== "AMOUNT_OFF_PRODUCTS") return { ok: false, error: "unknown rule type" };
   const target = parseTarget(c.target);
   if (!target.ok) return target;
@@ -224,4 +228,31 @@ function parseBundle(c: Record<string, unknown>): ParseResult<RuleConfig> {
   else return { ok: false, error: "invalid bundle value" };
   if (!isNum(c.limitPerOrder)) return { ok: false, error: "limitPerOrder missing" };
   return { ok: true, value: { type: "BUNDLE", currencyCode: c.currencyCode, components, value, limitPerOrder: c.limitPerOrder } };
+}
+
+function parseFreeShipping(c: Record<string, unknown>): ParseResult<RuleConfig> {
+  if (typeof c.currencyCode !== "string") return { ok: false, error: "currencyCode missing" };
+  if (typeof c.thresholdMinor !== "number" || !Number.isSafeInteger(c.thresholdMinor)) {
+    return { ok: false, error: "invalid threshold" };
+  }
+  if (!isNum(c.percent)) return { ok: false, error: "invalid percent" };
+  const maxAmountMinor =
+    c.maxAmountMinor === null
+      ? null
+      : typeof c.maxAmountMinor === "number" && Number.isSafeInteger(c.maxAmountMinor)
+        ? c.maxAmountMinor
+        : undefined;
+  if (maxAmountMinor === undefined) return { ok: false, error: "invalid maxAmount" };
+  if (c.appliesTo !== "ALL" && c.appliesTo !== "CHEAPEST") return { ok: false, error: "invalid appliesTo" };
+  return {
+    ok: true,
+    value: {
+      type: "FREE_SHIPPING",
+      currencyCode: c.currencyCode,
+      thresholdMinor: c.thresholdMinor,
+      percent: c.percent,
+      maxAmountMinor,
+      appliesTo: c.appliesTo as FreeShippingAppliesTo,
+    },
+  };
 }

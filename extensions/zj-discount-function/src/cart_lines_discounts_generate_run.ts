@@ -30,6 +30,8 @@ export function cartLinesDiscountsGenerateRun(input: CartInput): CartLinesDiscou
 
   const discountClass = discountClassFor(payload.config);
   if (!input.discount.discountClasses.includes(discountClass as never)) return NONE;
+  // Shipping rules run on the delivery-options target only.
+  if (discountClass === "SHIPPING") return NONE;
   const view = input as unknown as LinesInputLike;
   const ctx = { presentmentCurrencyRate: input.presentmentCurrencyRate };
 

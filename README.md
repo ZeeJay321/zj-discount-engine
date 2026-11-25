@@ -6,7 +6,7 @@ saved as an **automatic app discount**, with the rule's configuration stored in 
 metafield on that discount. The Function reads the metafield through its input query
 and applies the discount at checkout.
 
-**Status:** four rule types work end to end:
+**Status:** five rule types work end to end:
 
 | Rule type | Discount class | What it does |
 |---|---|---|
@@ -14,8 +14,9 @@ and applies the discount at checkout.
 | Tiered spend | ORDER | 2–5 spend thresholds; the highest tier the cart subtotal reaches applies to the whole order |
 | Buy X get Y | PRODUCT | every X + Y units from the product set earns Y units at a percentage off (100% = free); the cheapest units are discounted |
 | Bundle | PRODUCT | 2–5 components (a product or a specific variant, × quantity); complete bundles get a percentage off, a fixed amount off or a fixed bundle price |
+| Free shipping | SHIPPING | cart subtotal threshold; percentage off delivery options (100% = free), optional max per option; all options or cheapest per group |
 
-Free shipping and the simulator are next.
+The simulator is next.
 
 ## Layout
 
@@ -98,8 +99,8 @@ Locally, Prisma uses the template's SQLite file (`prisma/dev.sqlite`).
 ### A rule's type is fixed after creation
 
 Each rule type maps to a Shopify discount class (amount off, buy X get Y and bundles →
-PRODUCT; tiered spend → ORDER), and Shopify can't change the class of an existing
-discount.
+PRODUCT; tiered spend → ORDER; free shipping → SHIPPING), and Shopify can't change the
+class of an existing discount.
 So the edit form shows the type as read-only, and the server rejects a type change.
 To switch type, create a new rule and delete the old one.
 
@@ -191,6 +192,23 @@ products.
     component
 - The Function reads each line's **variant ID** for variant components.
 
+### Free shipping
+
+- Cart subtotal threshold in the shop currency; exactly at the threshold counts.
+  Converted with `presentmentCurrencyRate` like tiered spend.
+- Percentage off each targeted delivery option (1–100; 100 = free). Optional maximum
+  discount amount per option (shop currency); when the max clamps, the Function sends a
+  fixed amount instead of a percentage.
+- **Apply to:** all delivery options, or only the cheapest option in each delivery
+  group (ties: earlier option). Carts can have more than one delivery group (e.g. ship
+  + pickup); each group is handled separately.
+- **Discount class SHIPPING** only — uses the delivery-options Function target and
+  `deliveryDiscountsAdd`. Never creates product or order discounts.
+- **No cart-line cap:** the delivery input query does not read cart lines (only
+  subtotal and delivery option handles/costs).
+- Measured instruction counts (1 group): **1 option 1,606,637 (14.6%), 10 options
+  2,599,871 (23.6%)** of the 11M limit (see `tests/perf/ship-*-options.json`).
+
 ### Metafield schema versions
 
 The rule-config metafield has a `schemaVersion`.
@@ -199,9 +217,10 @@ The rule-config metafield has a `schemaVersion`.
 - **v2:** adds the tiered type.
 - **v3:** adds buy X get Y and product-list targets.
 - **v4:** adds bundles.
+- **v5:** adds free shipping.
 
 The Function reads every version, so older discounts keep working until they're next
-edited, and saving always writes v4. A payload is rejected if its version is too old
+edited, and saving always writes v5. A payload is rejected if its version is too old
 to contain its rule (for example, buy X get Y in a v2 payload).
 
 ### Opening rules from Shopify admin
@@ -247,6 +266,7 @@ product and variant IDs).
 | Buy X get Y | buy 1 get N−1 on N single-unit lines, so almost every line is discounted | **26** | 5,452,768 (49.6%) |
 | Bundle | fixed bundle price, every line in a component, limit 100 | **21** | 5,359,444 (48.7%) |
 | Tiered spend | not capped | – | – |
+| Free shipping | not capped (no lines read) | – | – |
 
 The caps live in `packages/discount-core/src/limits.json` and are read by core
 (`MAX_CART_LINES_BY_TYPE`, `maxCartLinesFor(type)`), the Function, the scripts and the
