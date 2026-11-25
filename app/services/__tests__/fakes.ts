@@ -63,10 +63,10 @@ type Handler = (variables: Record<string, unknown> | undefined) => unknown;
  * A handler may throw to simulate a network/GraphQL failure. Calls are recorded.
  */
 export function fakeGql(handlers: Record<string, Handler>) {
-  const calls: Array<{ op: string; variables?: Record<string, unknown> }> = [];
+  const calls: Array<{ op: string; query: string; variables?: Record<string, unknown> }> = [];
   const gql: AdminGraphql = async <T,>(query: string, variables?: Record<string, unknown>) => {
     const op = /(?:mutation|query)\s+(\w+)/.exec(query)?.[1] ?? "unknown";
-    calls.push({ op, variables });
+    calls.push({ op, query, variables });
     const h = handlers[op];
     if (!h) throw new Error(`Unexpected GraphQL operation ${op}`);
     return h(variables) as T;

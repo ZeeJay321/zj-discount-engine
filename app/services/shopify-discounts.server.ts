@@ -85,9 +85,11 @@ const APP_DISCOUNTS = `#graphql
     }
   }`;
 
+// type:all_with_app — without it app (Function) discounts are left out of the count.
+// status takes a comma list; `limit: null` so the count is never capped.
 const ACTIVE_COUNT = `#graphql
   query ZjActiveAutomaticDiscounts {
-    discountNodesCount(query: "method:automatic AND (status:active OR status:scheduled)") { count }
+    discountNodesCount(query: "method:automatic status:active,scheduled type:all_with_app", limit: null) { count }
   }`;
 
 const SHOP_INFO = `#graphql

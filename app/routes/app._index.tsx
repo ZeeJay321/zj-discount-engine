@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useFetcher, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { AppLink, useAppNavigate } from "../components/AppLink";
 import { collectionIdsOf, MAX_CART_LINES } from "@zj/discount-core";
 import { describeValue, formatDay, RULE_TYPE_LABELS } from "../lib/rule-display";
 import { appContext } from "../services/app-context.server";
@@ -79,13 +80,14 @@ const BADGE: Record<SyncStatus, { tone: "success" | "info" | "critical" | "warni
 export default function RulesIndex() {
   const { store, quota, rules } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
+  const go = useAppNavigate();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const act = (intent: string, id: string) => fetcher.submit({ intent, id }, { method: "post" });
   const atLimit = quota.used !== null && quota.used >= quota.limit;
 
   return (
     <s-page heading="Discount rules">
-      <s-button slot="primary-action" variant="primary" href="/app/rules/new">
+      <s-button slot="primary-action" variant="primary" onClick={() => go("/app/rules/new")}>
         New rule
       </s-button>
 
@@ -144,7 +146,7 @@ export default function RulesIndex() {
                 <s-table-row key={r.id}>
                   <s-table-cell>
                     <s-stack direction="block" gap="small-300">
-                      <s-link href={`/app/rules/${r.id}`}>{r.title}</s-link>
+                      <AppLink to={`/app/rules/${r.id}`}>{r.title}</AppLink>
                       <s-text color="subdued">{r.value}</s-text>
                     </s-stack>
                   </s-table-cell>
@@ -176,7 +178,7 @@ export default function RulesIndex() {
                         </>
                       ) : (
                         <>
-                          <s-button href={`/app/rules/${r.id}`}>Edit</s-button>
+                          <s-button onClick={() => go(`/app/rules/${r.id}`)}>Edit</s-button>
                           {(r.syncStatus === "FAILED" || r.syncStatus === "DELETING") && (
                             <s-button onClick={() => act("retry", r.id)}>Retry</s-button>
                           )}

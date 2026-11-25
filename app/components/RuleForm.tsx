@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Form } from "react-router";
+import { useAppNavigate } from "./AppLink";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { MAX_CART_LINES, MAX_TIERS, MIN_TIERS, validateRule, type OtherRule, type RuleType } from "@zj/discount-core";
 import { describeTiers, RULE_TYPE_LABELS } from "../lib/rule-display";
@@ -63,6 +64,7 @@ const asType = (v: string) => (v === "TIERED_SPEND" ? "TIERED_SPEND" : "AMOUNT_O
 
 export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, submitting, submitLabel, isEdit }: Props) {
   const shopify = useAppBridge();
+  const go = useAppNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>(serverErrors ?? {});
   const [triedSubmit, setTriedSubmit] = useState(false);
@@ -275,7 +277,7 @@ export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, 
         <s-button type="submit" variant="primary" {...(submitting ? { loading: true } : {})}>
           {submitLabel}
         </s-button>
-        <s-button href="/app">Cancel</s-button>
+        <s-button onClick={() => go("/app")}>Cancel</s-button>
       </s-stack>
     </Form>
   );

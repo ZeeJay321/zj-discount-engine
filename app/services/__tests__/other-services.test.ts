@@ -7,6 +7,16 @@ import { count, fakeGql, memoryRepo, pct10, SHOP } from "./fakes";
 
 describe("quota", () => {
   it("limit is Shopify's 25", () => expect(AUTOMATIC_DISCOUNT_LIMIT).toBe(25));
+  it("counts app (Function) discounts too: type:all_with_app, active+scheduled, no cap", async () => {
+    const f = fakeGql({ ZjActiveAutomaticDiscounts: count(1) });
+    await checkQuota(f.gql);
+    const q = f.calls[0].query;
+    expect(q).toContain("type:all_with_app");
+    expect(q).toContain("status:active,scheduled");
+    expect(q).toContain("method:automatic");
+    expect(q).toContain("limit: null");
+    expect(q).not.toMatch(/\bOR\b/);
+  });
   it("allows below 25 and blocks at 25", async () => {
     expect(await checkQuota(fakeGql({ ZjActiveAutomaticDiscounts: count(24) }).gql)).toEqual({ ok: true, used: 24 });
     const blocked = await checkQuota(fakeGql({ ZjActiveAutomaticDiscounts: count(25) }).gql);
