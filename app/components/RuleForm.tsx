@@ -429,7 +429,13 @@ export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, su
           <s-text color="subdued">This discount can be combined with:</s-text>
           <Checkbox label="Product discounts" name="combinesProduct" checked={values.combinesProduct} />
           <Checkbox label="Order discounts" name="combinesOrder" checked={values.combinesOrder} />
-          <Checkbox label="Shipping discounts" name="combinesShipping" checked={values.combinesShipping} />
+          {ruleType === "FREE_SHIPPING" ? (
+            <s-text color="subdued">
+              Shopify doesn&apos;t allow shipping discounts to combine with other shipping discounts.
+            </s-text>
+          ) : (
+            <Checkbox label="Shipping discounts" name="combinesShipping" checked={values.combinesShipping} />
+          )}
         </s-stack>
       </s-section>
 

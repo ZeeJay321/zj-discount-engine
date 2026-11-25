@@ -271,6 +271,7 @@ describe("validateRule — bundles", () => {
 describe("validateRule — free shipping", () => {
   const ship = (o: Record<string, unknown> = {}) =>
     draft({
+      combinesWith: { orderDiscounts: false, productDiscounts: false, shippingDiscounts: false },
       config: {
         type: "FREE_SHIPPING",
         currencyCode: "USD",
@@ -303,5 +304,16 @@ describe("validateRule — free shipping", () => {
     const other = { id: "o", title: "Other ship", enabled: true, priority: 10, startsAt: "2026-12-01T00:00:00.000Z", endsAt: null };
     expect(validateRule(ship(), [other]).map((e) => e.field)).toContain("priority");
     expect(validateRule(ship(), [{ ...other, priority: 11 }])).toEqual([]);
+  });
+
+  it("rejects combining with other shipping discounts", () => {
+    expect(
+      fields(
+        draft({
+          config: ship().config,
+          combinesWith: { orderDiscounts: true, productDiscounts: true, shippingDiscounts: true },
+        }),
+      ),
+    ).toContain("combinesWith.shippingDiscounts");
   });
 });

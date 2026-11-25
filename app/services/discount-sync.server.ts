@@ -74,11 +74,16 @@ export function shopifyWindow(s: RuleSnapshot, now: Date): { startsAt: string; e
 }
 
 export function toDiscountInput(id: string, s: RuleSnapshot, now: Date): DiscountAutomaticAppInput {
+  // Shopify does not allow shipping discounts to combine with other shipping discounts.
+  const combinesWith =
+    s.config.type === "FREE_SHIPPING"
+      ? { ...s.combinesWith, shippingDiscounts: false }
+      : { ...s.combinesWith };
   return {
     title: s.title,
     functionHandle: FUNCTION_HANDLE,
     discountClasses: discountClassesFor(s),
-    combinesWith: { ...s.combinesWith },
+    combinesWith,
     ...shopifyWindow(s, now),
     metafields: [
       {

@@ -45,7 +45,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     shipAppliesTo: "ALL",
     combinesOrder: false,
     combinesProduct: false,
-    combinesShipping: true,
+    // Shipping rules can't combine with other shipping discounts; default on for other types.
+    combinesShipping: url.searchParams.get("type") !== "FREE_SHIPPING",
   };
   return { values, others: othersFor(rules), ctx };
 };

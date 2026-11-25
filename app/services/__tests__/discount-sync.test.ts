@@ -600,13 +600,17 @@ describe("saveRule — free shipping", () => {
     maxAmountMinor: null,
     appliesTo: "ALL",
   };
+  const shipCombines = { orderDiscounts: false, productDiscounts: false, shippingDiscounts: false };
+  const shipDraft = (o: Partial<RuleDraft> = {}) =>
+    draft({ title: "Free ship $100", config: ship, combinesWith: shipCombines, ...o });
 
   it("creates a SHIPPING-class discount with schema v5", async () => {
     const t = setup({ ZjCreateRuleDiscount: created() });
-    const res = await saveRule(t.deps, draft({ title: "Free ship $100", config: ship }));
+    const res = await saveRule(t.deps, shipDraft());
     expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
     const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
     expect(sent.automaticAppDiscount.discountClasses).toEqual(["SHIPPING"]);
+    expect(sent.automaticAppDiscount.combinesWith.shippingDiscounts).toBe(false);
     expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value)).toMatchObject({
       schemaVersion: 5,
       collectionIds: [],
@@ -615,20 +619,38 @@ describe("saveRule — free shipping", () => {
   });
 
   it.each([
-    [{ orderDiscounts: true, productDiscounts: false, shippingDiscounts: true }],
+    [{ orderDiscounts: true, productDiscounts: false, shippingDiscounts: false }],
     [{ orderDiscounts: false, productDiscounts: true, shippingDiscounts: false }],
-  ])("send combinesWith exactly as chosen (incl. shippingDiscounts): %j", async (combinesWith) => {
+  ])("send combinesWith for product/order as chosen: %j", async (combinesWith) => {
     const t = setup({ ZjCreateRuleDiscount: created() });
-    await saveRule(t.deps, draft({ config: ship, combinesWith }));
+    await saveRule(t.deps, shipDraft({ combinesWith }));
     const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
     expect(sent.automaticAppDiscount.combinesWith).toEqual(combinesWith);
   });
 
+  it("forces shippingDiscounts false for free shipping (Shopify forbids stacking shipping)", () => {
+    const now = new Date("2026-06-01T12:00:00Z");
+    const input = toDiscountInput("rule_x", {
+      title: "Free ship",
+      enabled: true,
+      priority: 0,
+      startsAt: "2026-01-01T00:00:00.000Z",
+      endsAt: null,
+      combinesWith: { orderDiscounts: true, productDiscounts: true, shippingDiscounts: true },
+      config: ship,
+    }, now);
+    expect(input.combinesWith).toEqual({
+      orderDiscounts: true,
+      productDiscounts: true,
+      shippingDiscounts: false,
+    });
+  });
+
   it("type is fixed after creation", async () => {
     const t = setup({ ZjCreateRuleDiscount: created() });
-    const a = await saveRule(t.deps, draft({ config: ship }));
+    const a = await saveRule(t.deps, shipDraft());
     if (!a.ok) throw new Error("setup");
-    const res = await saveRule(t.deps, draft({ id: a.rule.id }));
+    const res = await saveRule(t.deps, shipDraft({ id: a.rule.id, config: pct10 }));
     expect(res.ok).toBe(false);
   });
 });

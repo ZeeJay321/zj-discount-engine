@@ -137,7 +137,8 @@ export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
     combinesWith: {
       orderDiscounts: fd.get("combinesOrder") !== null,
       productDiscounts: fd.get("combinesProduct") !== null,
-      shippingDiscounts: fd.get("combinesShipping") !== null,
+      // Shipping discounts can't combine with other shipping discounts (Shopify).
+      shippingDiscounts: ruleType === "FREE_SHIPPING" ? false : fd.get("combinesShipping") !== null,
     },
     config,
   };
@@ -204,7 +205,7 @@ export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
     shipAppliesTo: ship ? ship.appliesTo : ("ALL" as const),
     combinesOrder: draft.combinesWith.orderDiscounts,
     combinesProduct: draft.combinesWith.productDiscounts,
-    combinesShipping: draft.combinesWith.shippingDiscounts,
+    combinesShipping: c.type === "FREE_SHIPPING" ? false : draft.combinesWith.shippingDiscounts,
   };
 }
 

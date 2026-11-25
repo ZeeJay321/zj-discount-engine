@@ -204,6 +204,9 @@ products.
   + pickup); each group is handled separately.
 - **Discount class SHIPPING** only — uses the delivery-options Function target and
   `deliveryDiscountsAdd`. Never creates product or order discounts.
+- **Combinations:** can combine with product and order discounts. Cannot combine with
+  other shipping discounts (Shopify rule); the form hides that checkbox and sync
+  always sends `shippingDiscounts: false`.
 - **No cart-line cap:** the delivery input query does not read cart lines (only
   subtotal and delivery option handles/costs).
 - Measured instruction counts (1 group): **1 option 1,606,637 (14.6%), 10 options

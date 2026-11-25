@@ -66,6 +66,11 @@ export function validateRule(draft: RuleDraft, others: readonly OtherRule[] = []
   else if (c && c.type === "FREE_SHIPPING") validateFreeShipping(c, add);
   else add("config.type", "Unsupported rule type.");
 
+  // Shopify forbids stacking shipping discounts with other shipping discounts.
+  if (c?.type === "FREE_SHIPPING" && draft.combinesWith?.shippingDiscounts) {
+    add("combinesWith.shippingDiscounts", "A free-shipping rule can't combine with other shipping discounts.");
+  }
+
   // Overlap: two enabled rules with the same priority whose date ranges intersect.
   if (draft.enabled && errors.every((e) => !e.field.startsWith("startsAt") && !e.field.startsWith("endsAt") && e.field !== "priority")) {
     for (const o of others) {
