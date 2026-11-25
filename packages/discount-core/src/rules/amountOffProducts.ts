@@ -1,5 +1,6 @@
 import { allocatePercent, allocateProportional } from "../allocate";
 import { convertMinor } from "../money";
+import { isUsableLine, matchesTarget } from "./target";
 import type {
   AmountOffProductsConfig,
   Cart,
@@ -10,28 +11,7 @@ import type {
   RuleResult,
 } from "../types";
 
-/** Per-line ceiling that keeps subtotal × 10000 inside the safe integer range. */
-export const MAX_LINE_SUBTOTAL_MINOR = 900_000_000_000;
-
-function isUsableLine(line: CartLine): boolean {
-  return (
-    Number.isInteger(line.quantity) &&
-    line.quantity > 0 &&
-    Number.isSafeInteger(line.subtotalMinor) &&
-    line.subtotalMinor > 0 &&
-    line.subtotalMinor <= MAX_LINE_SUBTOTAL_MINOR
-  );
-}
-
-function matchesTarget(line: CartLine, config: AmountOffProductsConfig): boolean {
-  const wanted = config.target.collectionIds;
-  const ids = line.collectionIds;
-  // Index loops, not for…of: iterators are expensive in the Function's interpreter.
-  for (let i = 0; i < ids.length; i++) {
-    if (wanted.includes(ids[i])) return true;
-  }
-  return false;
-}
+export { MAX_LINE_SUBTOTAL_MINOR } from "./target";
 
 export function evaluateAmountOffProducts(
   rule: EvaluableRule & { config: AmountOffProductsConfig },
@@ -44,7 +24,7 @@ export function evaluateAmountOffProducts(
   let eligibleSum = 0;
   for (let i = 0; i < cart.lines.length; i++) {
     const l = cart.lines[i];
-    if (isUsableLine(l) && matchesTarget(l, config)) {
+    if (isUsableLine(l) && matchesTarget(l, config.target)) {
       eligible.push(l);
       subtotals.push(l.subtotalMinor);
       eligibleSum += l.subtotalMinor;

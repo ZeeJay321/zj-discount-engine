@@ -1,4 +1,4 @@
-import { discountClassFor, evaluateRule, MAX_CART_LINES, parseMetafieldPayload } from "@zj/discount-core";
+import { discountClassFor, evaluateRule, MAX_CART_LINES, parseMetafieldPayload, targetOf } from "@zj/discount-core";
 import type { CartInput, CartLinesDiscountsGenerateRunResult } from "../generated/api";
 import { toCoreCart, toCoreOrderCart, toOrderOperations, toProductOperations, type LinesInputLike } from "./adapter";
 
@@ -8,7 +8,8 @@ const NONE: CartLinesDiscountsGenerateRunResult = { operations: [] };
  * Lines/order target. Parses the rule from the discount metafield once, runs the
  * shared core evaluator, and maps the result to Shopify operations.
  * - Dates are NOT checked here: Shopify only runs this while the discount is active.
- * - Product rules: carts above MAX_CART_LINES get no discount (instruction budget).
+ * - Product rules (amount off, buy X get Y): carts above MAX_CART_LINES get no
+ *   discount at all (instruction budget).
  * - Order rules (tiered spend): only the cart subtotal is used; no cart-size cap
  *   (measured well under the limit even at 200 lines; see README).
  */
@@ -29,6 +30,8 @@ export function cartLinesDiscountsGenerateRun(input: CartInput): CartLinesDiscou
 
   const lineCount = view.cart.lines.length;
   if (lineCount === 0 || lineCount > MAX_CART_LINES) return NONE;
-  const result = evaluateRule(payload, toCoreCart(view, payload.collectionIds), ctx);
+  const target = targetOf(payload.config);
+  if (target === null) return NONE;
+  const result = evaluateRule(payload, toCoreCart(view, target, payload.collectionIds), ctx);
   return { operations: toProductOperations(result) } as unknown as CartLinesDiscountsGenerateRunResult;
 }

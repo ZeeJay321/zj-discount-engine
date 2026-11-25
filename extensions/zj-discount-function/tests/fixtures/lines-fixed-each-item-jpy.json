@@ -7,7 +7,7 @@
       "cart": {
         "cost": {
           "subtotalAmount": {
-            "amount": "5000",
+            "amount": "4999",
             "currencyCode": "JPY"
           }
         },
@@ -16,12 +16,13 @@
             "id": "gid://shopify/CartLine/1",
             "quantity": 1,
             "cost": {
-              "subtotalAmount": {
+              "amountPerQuantity": {
                 "amount": "1999"
               }
             },
             "merchandise": {
               "product": {
+                "id": "gid://shopify/Product/1",
                 "inAnyCollection": true
               }
             }
@@ -30,12 +31,13 @@
             "id": "gid://shopify/CartLine/2",
             "quantity": 2,
             "cost": {
-              "subtotalAmount": {
-                "amount": "3001"
+              "amountPerQuantity": {
+                "amount": "1500"
               }
             },
             "merchandise": {
               "product": {
+                "id": "gid://shopify/Product/2",
                 "inAnyCollection": true
               }
             }
@@ -48,7 +50,7 @@
         ],
         "metafield": {
           "jsonValue": {
-            "schemaVersion": 2,
+            "schemaVersion": 3,
             "ruleId": "rule_1",
             "title": "$5 off each",
             "collectionIds": [

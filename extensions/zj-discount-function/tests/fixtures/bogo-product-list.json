@@ -1,0 +1,101 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "75.00",
+            "currencyCode": "USD"
+          }
+        },
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 3,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "5.00"
+              }
+            },
+            "merchandise": {
+              "product": {
+                "id": "gid://shopify/Product/1",
+                "inAnyCollection": false
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/2",
+            "quantity": 3,
+            "cost": {
+              "amountPerQuantity": {
+                "amount": "20.00"
+              }
+            },
+            "merchandise": {
+              "product": {
+                "id": "gid://shopify/Product/2",
+                "inAnyCollection": false
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 3,
+            "ruleId": "bogo_1",
+            "title": "Buy 2 get 1 free",
+            "collectionIds": [],
+            "config": {
+              "type": "BUY_X_GET_Y",
+              "target": {
+                "kind": "PRODUCTS",
+                "productIds": [
+                  "gid://shopify/Product/2"
+                ]
+              },
+              "buyQuantity": 2,
+              "getQuantity": 1,
+              "percent": 100,
+              "limitPerOrder": 3
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "productDiscountsAdd": {
+            "candidates": [
+              {
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/2",
+                      "quantity": 1
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 20
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "ALL"
+          }
+        }
+      ]
+    }
+  }
+}

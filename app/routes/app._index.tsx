@@ -3,13 +3,13 @@ import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "re
 import { useFetcher, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppLink, useAppNavigate } from "../components/AppLink";
-import { collectionIdsOf, MAX_CART_LINES } from "@zj/discount-core";
+import { collectionIdsOf, MAX_CART_LINES, productIdsOf } from "@zj/discount-core";
 import { describeValue, formatDay, RULE_TYPE_LABELS } from "../lib/rule-display";
 import { appContext } from "../services/app-context.server";
 import { quotaSummary } from "../services/discount-quota.server";
 import { deleteRule, reconcile, retrySync, revertToSynced, setEnabled } from "../services/discount-sync.server";
 import type { SyncStatus } from "../services/rule-repo.server";
-import { getCollectionTitles } from "../services/shopify-discounts.server";
+import { getResourceTitles } from "../services/shopify-discounts.server";
 import { checkStore } from "../services/store-check.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -17,10 +17,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   await reconcile(deps); // retry rows left PENDING/DELETING by a crash or timeout
   const [rules, store] = await Promise.all([repo.list(shop), checkStore(gql)]);
   const quota = await quotaSummary(gql, rules, new Date());
-  const ids = [...new Set(rules.flatMap((r) => collectionIdsOf(r.config)))].slice(0, 250);
+  const ids = [...new Set(rules.flatMap((r) => [...collectionIdsOf(r.config), ...productIdsOf(r.config)]))].slice(0, 250);
   let titles: Record<string, string> = {};
   try {
-    titles = await getCollectionTitles(gql, ids);
+    titles = await getResourceTitles(gql, ids);
   } catch {
     // cosmetic only
   }
@@ -32,7 +32,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       title: r.title,
       type: RULE_TYPE_LABELS[r.config.type],
       value: describeValue(r.config),
-      appliesTo: r.config.type === "TIERED_SPEND" ? "Whole order" : collectionIdsOf(r.config).map((id) => titles[id] ?? id).join(", "),
+      appliesTo:
+        r.config.type === "TIERED_SPEND"
+          ? "Whole order"
+          : [...collectionIdsOf(r.config), ...productIdsOf(r.config)].map((id) => titles[id] ?? id).join(", "),
       starts: formatDay(r.startsAt, store.timezone),
       ends: formatDay(r.endsAt, store.timezone),
       priority: r.priority,
@@ -120,7 +123,7 @@ export default function RulesIndex() {
           <s-text color="subdued">
             Plan: {store.planName}
             {store.isDevelopment ? " (development store)" : store.isPlus ? " (Shopify Plus)" : ""} · Currency {store.currencyCode} · Rules apply to
-            carts of up to {MAX_CART_LINES} lines (amount-off rules; tiered spend has no limit).
+            carts of up to {MAX_CART_LINES} lines (amount-off and buy X get Y; tiered spend has no limit).
           </s-text>
         </s-stack>
       </s-section>

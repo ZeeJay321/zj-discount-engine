@@ -4,11 +4,12 @@
  * Dates are entered as shop-local calendar days and stored as UTC instants.
  */
 import {
-  collectionIdsOf,
   currencyExponent,
+  targetOf,
   formatMinor,
   parseDecimalToMinor,
   type AmountOffProductsConfig,
+  type ProductTarget,
   type RuleConfig,
   type RuleDraft,
   type RuleType,
@@ -36,7 +37,12 @@ const num = (s: string) => (s === "" ? Number.NaN : Number(s));
 
 export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
   const errors: ValidationError[] = [];
-  const ruleType: RuleType = str(fd, "ruleType") === "TIERED_SPEND" ? "TIERED_SPEND" : "AMOUNT_OFF_PRODUCTS";
+  const rawType = str(fd, "ruleType");
+  const ruleType: RuleType = rawType === "TIERED_SPEND" || rawType === "BUY_X_GET_Y" ? rawType : "AMOUNT_OFF_PRODUCTS";
+  // Product set shared by amount-off and buy X get Y: collections or a product list.
+  const targetIds = fd.getAll("targetIds").filter((v): v is string => typeof v === "string" && v !== "");
+  const target: ProductTarget =
+    str(fd, "targetKind") === "PRODUCTS" ? { kind: "PRODUCTS", productIds: targetIds } : { kind: "COLLECTIONS", collectionIds: targetIds };
   const exp = currencyExponent(ctx.shopCurrency);
   const amount = (raw: string, field: string, emptyMessage: string): number => {
     try {
@@ -60,9 +66,17 @@ export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
           : { kind: "FIXED_AMOUNT", amountMinor: amount(values[i] ?? "", `config.tiers.${i}.value`, "Enter an amount.") },
     }));
     config = { type: "TIERED_SPEND", currencyCode: ctx.shopCurrency, tiers };
+  } else if (ruleType === "BUY_X_GET_Y") {
+    config = {
+      type: "BUY_X_GET_Y",
+      target,
+      buyQuantity: num(str(fd, "buyQuantity")),
+      getQuantity: num(str(fd, "getQuantity")),
+      percent: num(str(fd, "bogoPercent")),
+      limitPerOrder: num(str(fd, "limitPerOrder")),
+    };
   } else {
     const valueKind = str(fd, "valueKind") === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE";
-    const collectionIds = fd.getAll("collectionIds").filter((v): v is string => typeof v === "string" && v !== "");
     const value: AmountOffProductsConfig["value"] =
       valueKind === "PERCENTAGE"
         ? { kind: "PERCENTAGE", percent: num(str(fd, "percent")) }
@@ -72,7 +86,7 @@ export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
             currencyCode: ctx.shopCurrency,
             appliesToEachItem: str(fd, "appliesTo") !== "once",
           };
-    config = { type: "AMOUNT_OFF_PRODUCTS", target: { kind: "COLLECTIONS", collectionIds }, value };
+    config = { type: "AMOUNT_OFF_PRODUCTS", target, value };
   }
 
   const startDate = str(fd, "startDate");
@@ -99,6 +113,8 @@ export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
   const c = draft.config;
   const money = (minor: number, currency: string) => formatMinor(minor, currencyExponent(currency));
   const v = c.type === "AMOUNT_OFF_PRODUCTS" ? c.value : null;
+  const target = targetOf(c);
+  const bogo = c.type === "BUY_X_GET_Y" ? c : null;
   const tiers =
     c.type === "TIERED_SPEND"
       ? c.tiers.map((t) => ({
@@ -122,7 +138,12 @@ export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
     tiers,
     startDate: draft.startsAt ? utcIsoToZonedDay(draft.startsAt, ctx.timezone) : "",
     endDate: draft.endsAt ? utcIsoToZonedDay(draft.endsAt, ctx.timezone) : "",
-    collectionIds: collectionIdsOf(c),
+    targetKind: target?.kind === "PRODUCTS" ? ("PRODUCTS" as const) : ("COLLECTIONS" as const),
+    targetIds: target ? (target.kind === "PRODUCTS" ? [...target.productIds] : [...target.collectionIds]) : [],
+    buyQuantity: bogo ? String(bogo.buyQuantity) : "2",
+    getQuantity: bogo ? String(bogo.getQuantity) : "1",
+    bogoPercent: bogo ? String(bogo.percent) : "100",
+    limitPerOrder: bogo ? String(bogo.limitPerOrder) : "1",
     combinesOrder: draft.combinesWith.orderDiscounts,
     combinesProduct: draft.combinesWith.productDiscounts,
     combinesShipping: draft.combinesWith.shippingDiscounts,
@@ -136,7 +157,12 @@ export function errorsByFormField(errors: ValidationError[]): Record<string, str
     priority: "priority",
     startsAt: "startDate",
     endsAt: "endDate",
-    "config.target.collectionIds": "collectionIds",
+    "config.target.collectionIds": "targetIds",
+    "config.target.productIds": "targetIds",
+    "config.buyQuantity": "buyQuantity",
+    "config.getQuantity": "getQuantity",
+    "config.percent": "bogoPercent",
+    "config.limitPerOrder": "limitPerOrder",
     "config.value.percent": "percent",
     "config.value.amount": "amount",
     "config.value.currencyCode": "amount",

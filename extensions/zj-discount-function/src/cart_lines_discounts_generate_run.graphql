@@ -18,13 +18,14 @@ query CartInput($collectionIds: [ID!]) {
       id
       quantity
       cost {
-        subtotalAmount {
+        amountPerQuantity {
           amount
         }
       }
       merchandise {
         ... on ProductVariant {
           product {
+            id
             inAnyCollection(ids: $collectionIds)
           }
         }

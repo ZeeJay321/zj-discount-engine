@@ -13,15 +13,16 @@
         },
         "lines": [
           {
-            "id": "gid://shopify/CartLine/0",
+            "id": "gid://shopify/CartLine/00000000-4b1d-4c2e-9f3a-000000000000",
             "quantity": 1,
             "cost": {
-              "subtotalAmount": {
+              "amountPerQuantity": {
                 "amount": "99.99"
               }
             },
             "merchandise": {
               "product": {
+                "id": "gid://shopify/Product/8000000000000",
                 "inAnyCollection": true
               }
             }

@@ -15,7 +15,7 @@ export const MAX_CART_LINES = JSON.parse(
 export function metafield({ ruleId = "rule_1", title = "10% off Winter", collectionIds = [C100], value }) {
   return {
     jsonValue: {
-      schemaVersion: 2,
+      schemaVersion: 3,
       ruleId,
       title,
       collectionIds,
@@ -54,24 +54,44 @@ export function tieredMetafield({ ruleId = "tiered_1", title = "Spend more, save
   };
 }
 
-export function line(n, { quantity = 1, amount, inCollection = true } = {}) {
+const decimalsOf = (s) => (String(s).includes(".") ? String(s).split(".")[1].length : 0);
+
+/**
+ * A product cart line. Give either `amount` (the line subtotal; the unit price is
+ * amount / quantity) or `unit` (the unit price). Product id: gid://shopify/Product/<n>
+ * unless `productId` is given.
+ */
+/** Real-length ids (36-char line UUIDs, 13-digit product ids) for instruction counting. */
+const realLineId = (n) => `gid://shopify/CartLine/${String(n).padStart(8, "0")}-4b1d-4c2e-9f3a-${String(n * 7919).padStart(12, "0")}`;
+const realProductId = (n) => `gid://shopify/Product/${8_000_000_000_000 + n * 1_000_003}`;
+
+export function line(n, { quantity = 1, amount, unit, inCollection = true, productId, realistic = false } = {}) {
+  let unitStr = unit;
+  if (unitStr === undefined) {
+    const d = decimalsOf(amount);
+    const u = Number(amount) / quantity;
+    unitStr = d === 0 ? String(u) : u.toFixed(Math.max(d, 2));
+  }
   return {
-    id: `gid://shopify/CartLine/${n}`,
+    id: realistic ? realLineId(n) : `gid://shopify/CartLine/${n}`,
     quantity,
-    cost: { subtotalAmount: { amount } },
-    merchandise: { product: { inAnyCollection: inCollection } },
+    cost: { amountPerQuantity: { amount: unitStr } },
+    merchandise: {
+      product: { id: productId ?? (realistic ? realProductId(n) : `gid://shopify/Product/${n}`), inAnyCollection: inCollection },
+    },
   };
 }
 
 /** A non-product line (e.g. a custom item): the ProductVariant fragment yields {}. */
 export function customLine(n, amount) {
-  return { id: `gid://shopify/CartLine/${n}`, quantity: 1, cost: { subtotalAmount: { amount } }, merchandise: {} };
+  return { id: `gid://shopify/CartLine/${n}`, quantity: 1, cost: { amountPerQuantity: { amount } }, merchandise: {} };
 }
 
 /** Cart-lines input. `subtotal` defaults to the sum of the line amounts. */
 export function linesInput({ lines, metafield: mf, discountClasses = ["PRODUCT"], rate = "1.0", currencyCode = "USD", subtotal }) {
-  const sum = lines.reduce((a, l) => a + Number(l.cost.subtotalAmount.amount), 0);
-  const amount = subtotal ?? (currencyCode === "JPY" ? String(Math.round(sum)) : sum.toFixed(2));
+  const sum = lines.reduce((a, l) => a + Number(l.cost.amountPerQuantity.amount) * l.quantity, 0);
+  const exp = currencyCode === "JPY" ? 0 : currencyCode === "KWD" ? 3 : 2;
+  const amount = subtotal ?? sum.toFixed(exp);
   return {
     presentmentCurrencyRate: rate,
     cart: { cost: { subtotalAmount: { amount, currencyCode } }, lines },
@@ -107,10 +127,10 @@ export function fixture(input, output) {
 }
 
 /** N lines of `unit` × quantity. `eligible(i)` decides collection membership (default: all). */
-export function bigCart(lineCount, quantity = 1, unit = "99.99", eligible = () => true) {
+export function bigCart(lineCount, quantity = 1, unit = "99.99", eligible = () => true, realistic = false) {
   const lines = [];
   for (let i = 0; i < lineCount; i++) {
-    lines.push(line(i, { quantity, amount: (Number(unit) * quantity).toFixed(2), inCollection: eligible(i) }));
+    lines.push(line(i, { quantity, unit, inCollection: eligible(i), realistic }));
   }
   return lines;
 }
@@ -120,3 +140,16 @@ export const fixedOnce = (amountMinor, currencyCode = "USD") => ({ kind: "FIXED_
 export const fixedEach = (amountMinor, currencyCode = "USD") => ({ kind: "FIXED_AMOUNT", amountMinor, currencyCode, appliesToEachItem: true });
 export const tierPct = (percent) => ({ kind: "PERCENTAGE", percent });
 export const tierFixed = (amountMinor) => ({ kind: "FIXED_AMOUNT", amountMinor });
+
+/** Buy X get Y rule metafield (schema v3). */
+export function bogoMetafield({ ruleId = "bogo_1", title = "Buy 2 get 1 free", target = { kind: "COLLECTIONS", collectionIds: [C100] }, buyQuantity = 2, getQuantity = 1, percent = 100, limitPerOrder = 3 } = {}) {
+  return {
+    jsonValue: {
+      schemaVersion: 3,
+      ruleId,
+      title,
+      collectionIds: target.kind === "COLLECTIONS" ? target.collectionIds : [],
+      config: { type: "BUY_X_GET_Y", target, buyQuantity, getQuantity, percent, limitPerOrder },
+    },
+  };
+}

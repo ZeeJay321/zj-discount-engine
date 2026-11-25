@@ -160,3 +160,57 @@ describe("validateRule — tiered spend", () => {
     expect(validateRule(tieredDraft([[1, P(1)], [2, P(2)]]), [other]).map((e) => e.field)).toContain("priority");
   });
 });
+
+describe("validateRule — buy X get Y and product targets", () => {
+  const bogo = (o: Record<string, unknown> = {}) =>
+    draft({
+      config: {
+        type: "BUY_X_GET_Y",
+        target: { kind: "COLLECTIONS", collectionIds: [C100] },
+        buyQuantity: 2,
+        getQuantity: 1,
+        percent: 100,
+        limitPerOrder: 3,
+        ...o,
+      } as RuleDraft["config"],
+    });
+  const f = (d: RuleDraft) => validateRule(d).map((e) => e.field);
+
+  it("accepts valid rules with collection or product targets", () => {
+    expect(validateRule(bogo())).toEqual([]);
+    expect(validateRule(bogo({ target: { kind: "PRODUCTS", productIds: ["gid://shopify/Product/1"] }, percent: 50, limitPerOrder: 100, buyQuantity: 100, getQuantity: 100 }))).toEqual([]);
+    expect(validateRule(bogo({ percent: 0.01 }))).toEqual([]);
+  });
+
+  it.each([
+    ["X = 0", { buyQuantity: 0 }, "config.buyQuantity"],
+    ["X fractional", { buyQuantity: 1.5 }, "config.buyQuantity"],
+    ["X > 100", { buyQuantity: 101 }, "config.buyQuantity"],
+    ["Y = 0", { getQuantity: 0 }, "config.getQuantity"],
+    ["Y missing", { getQuantity: undefined }, "config.getQuantity"],
+    ["percent 0", { percent: 0 }, "config.percent"],
+    ["percent > 100", { percent: 100.5 }, "config.percent"],
+    ["percent 3 decimals", { percent: 12.345 }, "config.percent"],
+    ["limit 0", { limitPerOrder: 0 }, "config.limitPerOrder"],
+    ["limit 101", { limitPerOrder: 101 }, "config.limitPerOrder"],
+    ["no collections", { target: { kind: "COLLECTIONS", collectionIds: [] } }, "config.target.collectionIds"],
+    ["no products", { target: { kind: "PRODUCTS", productIds: [] } }, "config.target.productIds"],
+    ["bad product gid", { target: { kind: "PRODUCTS", productIds: ["gid://shopify/Collection/1"] } }, "config.target.productIds"],
+    ["duplicate products", { target: { kind: "PRODUCTS", productIds: ["gid://shopify/Product/1", "gid://shopify/Product/1"] } }, "config.target.productIds"],
+    ["too many products", { target: { kind: "PRODUCTS", productIds: Array.from({ length: 101 }, (_, i) => `gid://shopify/Product/${i}`) } }, "config.target.productIds"],
+    ["missing target", { target: undefined }, "config.target.collectionIds"],
+  ])("rejects %s", (_n, o, field) => expect(f(bogo(o))).toContain(field));
+
+  it("amount-off accepts and validates product-list targets too", () => {
+    const amountOff = (productIds: string[]) =>
+      draft({ config: { type: "AMOUNT_OFF_PRODUCTS", target: { kind: "PRODUCTS", productIds }, value: pct(10) } });
+    expect(validateRule(amountOff(["gid://shopify/Product/5"]))).toEqual([]);
+    expect(f(amountOff([]))).toContain("config.target.productIds");
+  });
+
+  it("same-priority overlap check applies to BOGO rules (and any other rule)", () => {
+    const other = { id: "o", title: "Other BOGO", enabled: true, priority: 10, startsAt: "2026-12-01T00:00:00.000Z", endsAt: null };
+    expect(validateRule(bogo(), [other]).map((e) => e.field)).toContain("priority");
+    expect(validateRule(bogo(), [{ ...other, priority: 11 }])).toEqual([]);
+  });
+});

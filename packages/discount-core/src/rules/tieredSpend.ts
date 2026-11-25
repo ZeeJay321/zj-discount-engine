@@ -1,7 +1,7 @@
 import { allocatePercent } from "../allocate";
 import { convertMinor } from "../money";
 import type { Cart, EvaluableRule, EvaluateContext, RuleResult, TieredSpendConfig } from "../types";
-import { MAX_LINE_SUBTOTAL_MINOR } from "./amountOffProducts";
+import { MAX_LINE_SUBTOTAL_MINOR } from "./target";
 
 /**
  * Cart subtotal for order rules: the subtotal Shopify reports (Function path, no lines

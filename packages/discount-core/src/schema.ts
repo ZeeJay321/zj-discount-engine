@@ -4,16 +4,25 @@
  * extension's input variables are taken from this metafield's top-level keys.
  */
 import { discountClassFor } from "./evaluate";
-import type { AmountOffValue, DiscountClass, RuleConfig, RuleDraft, SpendTier, TierValue } from "./types";
+import type { AmountOffValue, DiscountClass, ProductTarget, RuleConfig, RuleDraft, SpendTier, TierValue } from "./types";
 
 /**
- * v1: amount-off-products only.
+ * v1: amount-off-products with collection targets.
  * v2: adds the TIERED_SPEND type (same top-level shape).
+ * v3: adds BUY_X_GET_Y and PRODUCTS (product-list) targets.
  * Readers accept both; writers always write the current version. Discounts saved
  * with v1 keep working until they are next edited.
  */
-export const RULE_CONFIG_SCHEMA_VERSION = 2;
-export const SUPPORTED_SCHEMA_VERSIONS: readonly number[] = [1, 2];
+export const RULE_CONFIG_SCHEMA_VERSION = 3;
+export const SUPPORTED_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3];
+
+/** Oldest schema version that can describe this config (older payloads can't contain it). */
+export function minSchemaVersion(config: RuleConfig): number {
+  if (config.type === "BUY_X_GET_Y") return 3;
+  if (config.type === "AMOUNT_OFF_PRODUCTS" && config.target.kind === "PRODUCTS") return 3;
+  if (config.type === "TIERED_SPEND") return 2;
+  return 1;
+}
 export const METAFIELD_NAMESPACE = "$app";
 export const METAFIELD_KEY = "rule-config";
 
@@ -36,8 +45,19 @@ export function toMetafieldPayload(rule: { id: string; title: string; config: Ru
   };
 }
 
+/** The rule's product set, if it has one (amount-off and buy X get Y). */
+export function targetOf(config: RuleConfig): ProductTarget | null {
+  return config.type === "TIERED_SPEND" ? null : config.target;
+}
+
 export function collectionIdsOf(config: RuleConfig): string[] {
-  return config.type === "AMOUNT_OFF_PRODUCTS" && config.target.kind === "COLLECTIONS" ? [...config.target.collectionIds] : [];
+  const t = targetOf(config);
+  return t && t.kind === "COLLECTIONS" ? [...t.collectionIds] : [];
+}
+
+export function productIdsOf(config: RuleConfig): string[] {
+  const t = targetOf(config);
+  return t && t.kind === "PRODUCTS" ? [...t.productIds] : [];
 }
 
 export function discountClassesFor(rule: Pick<RuleDraft, "config">): DiscountClass[] {
@@ -61,7 +81,7 @@ export function parseMetafieldPayload(json: unknown): ParseResult<RuleMetafieldP
   if (!isStrArray(json.collectionIds)) return { ok: false, error: "collectionIds missing" };
   const config = parseConfig(json.config);
   if (!config.ok) return config;
-  if (version === 1 && config.value.type !== "AMOUNT_OFF_PRODUCTS") return { ok: false, error: "rule type needs schemaVersion 2" };
+  if (version < minSchemaVersion(config.value)) return { ok: false, error: `rule needs schemaVersion ${minSchemaVersion(config.value)}` };
   return {
     ok: true,
     value: {
@@ -77,18 +97,42 @@ export function parseMetafieldPayload(json: unknown): ParseResult<RuleMetafieldP
 export function parseConfig(c: unknown): ParseResult<RuleConfig> {
   if (!isObj(c)) return { ok: false, error: "config is not an object" };
   if (c.type === "TIERED_SPEND") return parseTiered(c);
+  if (c.type === "BUY_X_GET_Y") return parseBuyXGetY(c);
   if (c.type !== "AMOUNT_OFF_PRODUCTS") return { ok: false, error: "unknown rule type" };
-  const t = c.target;
-  if (!isObj(t) || t.kind !== "COLLECTIONS" || !isStrArray(t.collectionIds))
-    return { ok: false, error: "invalid target" };
+  const target = parseTarget(c.target);
+  if (!target.ok) return target;
   const value = parseValue(c.value);
   if (!value.ok) return value;
+  return { ok: true, value: { type: "AMOUNT_OFF_PRODUCTS", target: target.value, value: value.value } };
+}
+
+function parseTarget(t: unknown): ParseResult<ProductTarget> {
+  if (isObj(t) && t.kind === "COLLECTIONS" && isStrArray(t.collectionIds)) {
+    return { ok: true, value: { kind: "COLLECTIONS", collectionIds: t.collectionIds } };
+  }
+  if (isObj(t) && t.kind === "PRODUCTS" && isStrArray(t.productIds)) {
+    return { ok: true, value: { kind: "PRODUCTS", productIds: t.productIds } };
+  }
+  return { ok: false, error: "invalid target" };
+}
+
+const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+
+function parseBuyXGetY(c: Record<string, unknown>): ParseResult<RuleConfig> {
+  const target = parseTarget(c.target);
+  if (!target.ok) return target;
+  if (!isNum(c.buyQuantity) || !isNum(c.getQuantity) || !isNum(c.percent) || !isNum(c.limitPerOrder)) {
+    return { ok: false, error: "invalid buy X get Y values" };
+  }
   return {
     ok: true,
     value: {
-      type: "AMOUNT_OFF_PRODUCTS",
-      target: { kind: "COLLECTIONS", collectionIds: t.collectionIds },
-      value: value.value,
+      type: "BUY_X_GET_Y",
+      target: target.value,
+      buyQuantity: c.buyQuantity,
+      getQuantity: c.getQuantity,
+      percent: c.percent,
+      limitPerOrder: c.limitPerOrder,
     },
   };
 }

@@ -2,11 +2,11 @@ import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "re
 import { useActionData, useFetcher, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { RuleForm, type RuleFormValues } from "../components/RuleForm";
-import { collectionIdsOf } from "@zj/discount-core";
+import { collectionIdsOf, productIdsOf } from "@zj/discount-core";
 import { draftToFormValues } from "../lib/rule-form";
 import { retrySync, revertToSynced } from "../services/discount-sync.server";
 import { formPageContext, handleSave, othersFor } from "../services/rule-form-action.server";
-import { getCollectionTitles } from "../services/shopify-discounts.server";
+import { getResourceTitles } from "../services/shopify-discounts.server";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { repo, shop, ctx, gql } = await formPageContext(request);
@@ -14,15 +14,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const rule = rules.find((r) => r.id === params.id);
   if (!rule) throw new Response("Rule not found", { status: 404 });
   const values = draftToFormValues({ ...rule, id: rule.id }, ctx) as RuleFormValues;
-  let collectionTitles: Record<string, string> = {};
+  let resourceTitles: Record<string, string> = {};
   try {
-    collectionTitles = await getCollectionTitles(gql, collectionIdsOf(rule.config));
+    resourceTitles = await getResourceTitles(gql, [...collectionIdsOf(rule.config), ...productIdsOf(rule.config)]);
   } catch {
     // titles are cosmetic; fall back to IDs
   }
   return {
     values,
-    collectionTitles,
+    resourceTitles,
     others: othersFor(rules, rule.id),
     ctx,
     sync: { status: rule.syncStatus, error: rule.syncError, canRevert: rule.syncedConfig !== null },
@@ -46,7 +46,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function EditRule() {
-  const { values, collectionTitles, others, ctx, sync } = useLoaderData<typeof loader>();
+  const { values, resourceTitles, others, ctx, sync } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const nav = useNavigation();
   const fetcher = useFetcher();
@@ -79,7 +79,7 @@ export default function EditRule() {
       <RuleForm
         key={JSON.stringify(values)}
         values={values}
-        collectionTitles={collectionTitles}
+        resourceTitles={resourceTitles}
         others={others}
         ctx={ctx}
         serverErrors={actionData && "errors" in actionData ? (actionData.errors as Record<string, string>) : undefined}

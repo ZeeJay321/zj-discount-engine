@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handleComplianceWebhook } from "../compliance.server";
 import { AUTOMATIC_DISCOUNT_LIMIT, checkQuota, quotaSummary } from "../discount-quota.server";
-import { adminGraphql, deleteDiscount, findDiscountIdByRuleId, getCollectionTitles, isNotFound, ShopifyApiError } from "../shopify-discounts.server";
+import { adminGraphql, deleteDiscount, findDiscountIdByRuleId, getResourceTitles, isNotFound, ShopifyApiError } from "../shopify-discounts.server";
 import { checkStore, evaluateStore } from "../store-check.server";
 import { count, fakeGql, memoryRepo, pct10, SHOP } from "./fakes";
 
@@ -111,10 +111,10 @@ describe("shopify-discounts helpers", () => {
     page = 0;
     expect(await findDiscountIdByRuleId(gql, "zzz", 1)).toBeNull();
   });
-  it("getCollectionTitles maps ids to titles", async () => {
-    const f = fakeGql({ ZjCollectionTitles: () => ({ nodes: [{ id: "g1", title: "Winter" }, null, {}] }) });
-    expect(await getCollectionTitles(f.gql, ["g1", "g2"])).toEqual({ g1: "Winter" });
-    expect(await getCollectionTitles(f.gql, [])).toEqual({});
+  it("getResourceTitles maps collection and product ids to titles", async () => {
+    const f = fakeGql({ ZjResourceTitles: () => ({ nodes: [{ id: "g1", title: "Winter" }, { id: "p1", title: "Cap" }, null, {}] }) });
+    expect(await getResourceTitles(f.gql, ["g1", "p1", "g2"])).toEqual({ g1: "Winter", p1: "Cap" });
+    expect(await getResourceTitles(f.gql, [])).toEqual({});
     expect(f.calls).toHaveLength(1);
   });
 });

@@ -16,12 +16,13 @@
             "id": "gid://shopify/CartLine/1",
             "quantity": 1,
             "cost": {
-              "subtotalAmount": {
-                "amount": "0.0"
+              "amountPerQuantity": {
+                "amount": "0.00"
               }
             },
             "merchandise": {
               "product": {
+                "id": "gid://shopify/Product/1",
                 "inAnyCollection": false
               }
             }

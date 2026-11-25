@@ -10,6 +10,7 @@ import {
   minorToNumber,
   type Cart,
   type CartLine,
+  type ProductTarget,
   type RuleResult,
 } from "@zj/discount-core";
 
@@ -21,32 +22,45 @@ export interface LinesInputLike {
     lines: ReadonlyArray<{
       id: string;
       quantity: number;
-      cost: { subtotalAmount: { amount: string | number } };
-      merchandise: { product?: { inAnyCollection: boolean } };
+      cost: { amountPerQuantity: { amount: string | number } };
+      merchandise: { product?: { id: string; inAnyCollection: boolean } };
     }>;
   };
 }
 
-export function toCoreCart(input: LinesInputLike, collectionIds: readonly string[]): Cart {
+/**
+ * Lines in the rule's product set, as core lines. Lines outside the set can never be
+ * discounted (and don't count towards buy X get Y sets), so they are dropped before the
+ * comparatively costly amount parsing; core filters by the same target, so the result
+ * is identical. Collection targets use the input query's `inAnyCollection` yes/no;
+ * product targets compare the line's product id.
+ */
+export function toCoreCart(input: LinesInputLike, target: ProductTarget, collectionIds: readonly string[]): Cart {
   const currencyCode = input.cart.cost.subtotalAmount.currencyCode;
   const exp = currencyExponent(currencyCode);
   const src = input.cart.lines;
+  const productIds = target.kind === "PRODUCTS" ? target.productIds : null;
   const lines: CartLine[] = [];
   for (let i = 0; i < src.length; i++) {
     const line = src[i];
-    // inAnyCollection is yes/no; "yes" means in at least one of the rule's collections.
-    // Lines outside the collections can never be discounted by this rule type, so they
-    // are dropped before the (comparatively costly) amount parsing. Core would filter
-    // them out anyway, so the result is identical.
     const product = line.merchandise.product;
-    if (product === undefined || !product.inAnyCollection) continue;
-    let subtotalMinor: number;
+    if (product === undefined) continue;
+    if (productIds !== null ? !productIds.includes(product.id) : !product.inAnyCollection) continue;
+    let unitPriceMinor: number;
     try {
-      subtotalMinor = decimalToMinor(line.cost.subtotalAmount.amount, exp);
+      unitPriceMinor = decimalToMinor(line.cost.amountPerQuantity.amount, exp);
     } catch {
       continue; // unparseable amount: skip the line rather than fail the checkout
     }
-    lines.push({ id: line.id, quantity: line.quantity, subtotalMinor, collectionIds });
+    lines.push({
+      id: line.id,
+      quantity: line.quantity,
+      unitPriceMinor,
+      subtotalMinor: unitPriceMinor * line.quantity,
+      productId: product.id,
+      // "in any of the rule's collections" → the rule's collection ids (core re-checks)
+      collectionIds,
+    });
   }
   return { currencyCode, lines };
 }
@@ -64,7 +78,8 @@ export function toProductOperations(result: RuleResult) {
   for (let i = 0; i < n; i++) {
     const l = result.lines[i];
     candidates[i] = {
-      targets: [{ cartLine: { id: l.lineId } }],
+      // quantity: discount only that many units of the line (buy X get Y); absent = whole line.
+      targets: [l.quantity === undefined ? { cartLine: { id: l.lineId } } : { cartLine: { id: l.lineId, quantity: l.quantity } }],
       value: { fixedAmount: { amount: minorToNumber(l.amountMinor, exp) } },
     };
   }

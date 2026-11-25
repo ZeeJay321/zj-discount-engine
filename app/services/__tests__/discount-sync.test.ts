@@ -51,7 +51,7 @@ describe("toDiscountInput", () => {
     const mf = input.metafields[0];
     expect(mf).toMatchObject({ namespace: "$app", key: "rule-config", type: "json" });
     expect(JSON.parse(mf.value)).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       ruleId: "rule_1",
       title: "10% off Winter",
       collectionIds: [C1],
@@ -433,7 +433,7 @@ describe("tiered spend rules", () => {
     const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
     expect(sent.automaticAppDiscount.discountClasses).toEqual(["ORDER"]);
     const payload = JSON.parse(sent.automaticAppDiscount.metafields[0].value);
-    expect(payload).toMatchObject({ schemaVersion: 2, collectionIds: [], config: tiers });
+    expect(payload).toMatchObject({ schemaVersion: 3, collectionIds: [], config: tiers });
   });
 
   it.each([
@@ -479,5 +479,67 @@ describe("tiered spend rules", () => {
     const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
     expect(sent.automaticAppDiscount.discountClasses).toEqual(["ORDER"]);
     expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value).config.tiers).toHaveLength(2);
+  });
+});
+
+describe("buy X get Y rules", () => {
+  const bogo: RuleDraft["config"] = {
+    type: "BUY_X_GET_Y",
+    target: { kind: "PRODUCTS", productIds: ["gid://shopify/Product/1", "gid://shopify/Product/2"] },
+    buyQuantity: 2,
+    getQuantity: 1,
+    percent: 100,
+    limitPerOrder: 3,
+  };
+
+  it("are created as PRODUCT discounts with a v3 metafield (product list, no collection variable)", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    const res = await saveRule(t.deps, draft({ title: "Buy 2 get 1 free", config: bogo }));
+    expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.discountClasses).toEqual(["PRODUCT"]);
+    expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value)).toEqual({
+      schemaVersion: 3,
+      ruleId: res.ok ? res.rule.id : "",
+      title: "Buy 2 get 1 free",
+      collectionIds: [],
+      config: bogo,
+    });
+  });
+
+  it("collection-targeted BOGO fills the collection input variable", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    await saveRule(t.deps, draft({ config: { ...bogo, target: { kind: "COLLECTIONS", collectionIds: [C1] } } as RuleDraft["config"] }));
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value).collectionIds).toEqual([C1]);
+  });
+
+  it.each([
+    [{ orderDiscounts: true, productDiscounts: false, shippingDiscounts: true }],
+    [{ orderDiscounts: false, productDiscounts: true, shippingDiscounts: false }],
+  ])("send combinesWith exactly as chosen: %j", async (combinesWith) => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    await saveRule(t.deps, draft({ config: bogo, combinesWith }));
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.combinesWith).toEqual(combinesWith);
+  });
+
+  it("type is fixed: BOGO → amount off is rejected, and amount off → BOGO too", async () => {
+    let n = 0;
+    const t = setup({ ZjCreateRuleDiscount: () => created(`gid://shopify/DiscountAutomaticNode/${++n}`)() });
+    const a = await saveRule(t.deps, draft({ priority: 1, config: bogo }));
+    const b = await saveRule(t.deps, draft({ priority: 2 }));
+    if (!a.ok || !b.ok) throw new Error("setup");
+    expect((await saveRule(t.deps, draft({ id: a.rule.id, priority: 1 }))).ok).toBe(false);
+    expect((await saveRule(t.deps, draft({ id: b.rule.id, priority: 2, config: bogo }))).ok).toBe(false);
+  });
+
+  it("invalid BOGO values are rejected before any Shopify call", async () => {
+    const t = setup({});
+    const res = await saveRule(t.deps, draft({ config: { ...bogo, getQuantity: 0, limitPerOrder: 101 } as RuleDraft["config"] }));
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.errors.map((e) => e.field).sort()).toEqual(["config.getQuantity", "config.limitPerOrder"]);
+    expect(t.calls).toHaveLength(0);
   });
 });

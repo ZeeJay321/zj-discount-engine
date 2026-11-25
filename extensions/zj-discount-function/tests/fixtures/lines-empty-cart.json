@@ -19,7 +19,7 @@
         ],
         "metafield": {
           "jsonValue": {
-            "schemaVersion": 2,
+            "schemaVersion": 3,
             "ruleId": "rule_1",
             "title": "10% off Winter",
             "collectionIds": [

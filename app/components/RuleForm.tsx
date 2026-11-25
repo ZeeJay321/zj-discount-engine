@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Form } from "react-router";
 import { useAppNavigate } from "./AppLink";
-import { useAppBridge } from "@shopify/app-bridge-react";
 import { MAX_CART_LINES, MAX_TIERS, MIN_TIERS, validateRule, type OtherRule, type RuleType } from "@zj/discount-core";
-import { describeTiers, RULE_TYPE_LABELS } from "../lib/rule-display";
+import { describeBuyXGetY, describeTiers, RULE_TYPE_LABELS } from "../lib/rule-display";
+import { TargetPicker, type TargetKind } from "./TargetPicker";
 import { errorsByFormField, parseRuleForm, type FormContext } from "../lib/rule-form";
 
 export interface RuleFormValues {
@@ -19,7 +19,12 @@ export interface RuleFormValues {
   tiers: Array<{ threshold: string; value: string }>;
   startDate: string;
   endDate: string;
-  collectionIds: string[];
+  targetKind: TargetKind;
+  targetIds: string[];
+  buyQuantity: string;
+  getQuantity: string;
+  bogoPercent: string;
+  limitPerOrder: string;
   combinesOrder: boolean;
   combinesProduct: boolean;
   combinesShipping: boolean;
@@ -27,7 +32,8 @@ export interface RuleFormValues {
 
 interface Props {
   values: RuleFormValues;
-  collectionTitles: Record<string, string>;
+  /** id → title for chosen collections/products. */
+  resourceTitles: Record<string, string>;
   /** Other rules of the shop, for the same-priority overlap check before submit. */
   others: OtherRule[];
   ctx: FormContext;
@@ -60,10 +66,9 @@ function useElementValue<T extends string>(initial: T, parse: (v: string) => T) 
 }
 
 const asKind = (v: string) => (v === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE") as "PERCENTAGE" | "FIXED_AMOUNT";
-const asType = (v: string) => (v === "TIERED_SPEND" ? "TIERED_SPEND" : "AMOUNT_OFF_PRODUCTS") as RuleType;
+const asType = (v: string) => (v === "TIERED_SPEND" || v === "BUY_X_GET_Y" ? v : "AMOUNT_OFF_PRODUCTS") as RuleType;
 
-export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, submitting, submitLabel, isEdit }: Props) {
-  const shopify = useAppBridge();
+export function RuleForm({ values, resourceTitles, others, ctx, serverErrors, submitting, submitLabel, isEdit }: Props) {
   const go = useAppNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>(serverErrors ?? {});
@@ -73,7 +78,8 @@ export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, 
   const [valueKind, kindRef] = useElementValue(values.valueKind, asKind);
   const [tierKind, tierKindRef] = useElementValue(values.tierKind, asKind);
   const [tiers, setTiers] = useState(() => values.tiers.map((t) => ({ ...t, key: newTierKey() })));
-  const [collections, setCollections] = useState(values.collectionIds.map((id) => ({ id, title: collectionTitles[id] ?? id })));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bogoPercentRef = useRef<any>(null);
 
   useEffect(() => setErrors(serverErrors ?? {}), [serverErrors]);
 
@@ -86,14 +92,15 @@ export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, 
     return { draft, all };
   }
 
-  // Live preview of the tiers, and live validation once a submit has been attempted.
+  // Live preview (tiers / buy X get Y), and live validation once a submit was attempted.
   useEffect(() => {
     const form = formRef.current;
     if (!form) return;
     const refresh = () => {
       const res = check();
       if (!res) return;
-      setPreview(res.draft.config.type === "TIERED_SPEND" ? describeTiers(res.draft.config) : []);
+      const c = res.draft.config;
+      setPreview(c.type === "TIERED_SPEND" ? describeTiers(c) : c.type === "BUY_X_GET_Y" ? [describeBuyXGetY(c)] : []);
       if (triedSubmit) setErrors(errorsByFormField(res.all));
     };
     refresh();
@@ -107,13 +114,12 @@ export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [triedSubmit, ruleType, tierKind, tiers.length]);
 
-  async function pickCollections() {
-    const picked = await shopify.resourcePicker({
-      type: "collection",
-      multiple: true,
-      selectionIds: collections.map((c) => ({ id: c.id })),
-    });
-    if (picked) setCollections(picked.map((c: { id: string; title?: string }) => ({ id: c.id, title: c.title ?? c.id })));
+  /** "Make it free": set the percentage to 100 and let the preview/validation refresh. */
+  function makeFree() {
+    const el = bogoPercentRef.current;
+    if (!el) return;
+    el.value = "100";
+    el.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -134,8 +140,6 @@ export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, 
     <Form method="post" onSubmit={onSubmit} ref={formRef}>
       <input type="hidden" name="intent" value="save" />
       {values.id && <input type="hidden" name="id" value={values.id} />}
-      {ruleType === "AMOUNT_OFF_PRODUCTS" &&
-        collections.map((c) => <input key={c.id} type="hidden" name="collectionIds" value={c.id} />)}
 
       {errors.form && (
         <s-banner tone="critical" heading="The rule couldn't be saved">
@@ -160,6 +164,7 @@ export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, 
             <s-select label="Rule type" name="ruleType" value={ruleType} ref={typeRef}>
               <s-option value="AMOUNT_OFF_PRODUCTS">{RULE_TYPE_LABELS.AMOUNT_OFF_PRODUCTS}</s-option>
               <s-option value="TIERED_SPEND">{RULE_TYPE_LABELS.TIERED_SPEND} (spend X, get Y off the order)</s-option>
+              <s-option value="BUY_X_GET_Y">{RULE_TYPE_LABELS.BUY_X_GET_Y} (cheapest units discounted)</s-option>
             </s-select>
           )}
           <s-text-field label="Title" name="title" value={values.title} details="Shown to customers at checkout." {...err("title")} />
@@ -168,23 +173,48 @@ export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, 
         </s-stack>
       </s-section>
 
+      {ruleType !== "TIERED_SPEND" && (
+        <s-section heading="Products">
+          <TargetPicker kind={values.targetKind} ids={values.targetIds} titles={resourceTitles} error={errors.targetIds} />
+        </s-section>
+      )}
+
+      {ruleType === "BUY_X_GET_Y" && (
+        <s-section heading="Buy X get Y">
+          <s-stack direction="block" gap="base">
+            <s-paragraph>
+              Every set of buy + get units from these products earns the get units at a discount. The cheapest units in
+              the cart are the ones discounted (equal prices: the earlier cart line first).
+            </s-paragraph>
+            <s-stack direction="inline" gap="base">
+              <s-number-field label="Customer buys" name="buyQuantity" value={values.buyQuantity} min={1} max={100} step={1} suffix="units" {...err("buyQuantity")} />
+              <s-number-field label="Customer gets" name="getQuantity" value={values.getQuantity} min={1} max={100} step={1} suffix="units" {...err("getQuantity")} />
+            </s-stack>
+            <s-stack direction="inline" gap="base">
+              <s-number-field label="Discount on the get units" name="bogoPercent" value={values.bogoPercent} min={0.01} max={100} step={0.01}
+                suffix="%" ref={bogoPercentRef} {...err("bogoPercent")} />
+              <s-button variant="tertiary" onClick={makeFree}>Make it free</s-button>
+            </s-stack>
+            <s-number-field label="Limit per order" name="limitPerOrder" value={values.limitPerOrder} min={1} max={100} step={1}
+              suffix="times" details="How many times the offer can apply in one order (1–100)." {...err("limitPerOrder")} />
+            <s-text color="subdued">
+              Applies to carts with up to {MAX_CART_LINES} lines. Larger carts get no discount from this rule
+              (Shopify Function instruction limit).
+            </s-text>
+            {preview.length > 0 && (
+              <s-box padding="base" background="subdued" borderRadius="base">
+                <s-stack direction="block" gap="small-300">
+                  <s-text type="strong">Preview</s-text>
+                  <s-text>{preview[0]}</s-text>
+                </s-stack>
+              </s-box>
+            )}
+          </s-stack>
+        </s-section>
+      )}
+
       {ruleType === "AMOUNT_OFF_PRODUCTS" ? (
         <>
-          <s-section heading="Collections">
-            <s-stack direction="block" gap="base">
-              {collections.length === 0 ? (
-                <s-text color="subdued">No collections chosen.</s-text>
-              ) : (
-                <s-unordered-list>
-                  {collections.map((c) => (
-                    <s-list-item key={c.id}>{c.title}</s-list-item>
-                  ))}
-                </s-unordered-list>
-              )}
-              {errors.collectionIds && <s-text tone="critical">{errors.collectionIds}</s-text>}
-              <s-button onClick={pickCollections}>{collections.length ? "Change collections" : "Choose collections"}</s-button>
-            </s-stack>
-          </s-section>
 
           <s-section heading="Value">
             <s-stack direction="block" gap="base">
@@ -211,7 +241,7 @@ export function RuleForm({ values, collectionTitles, others, ctx, serverErrors, 
             </s-stack>
           </s-section>
         </>
-      ) : (
+      ) : ruleType !== "TIERED_SPEND" ? null : (
         <s-section heading="Tiers">
           <s-stack direction="block" gap="base">
             <s-paragraph>

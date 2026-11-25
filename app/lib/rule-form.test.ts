@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateRule, type AmountOffProductsConfig } from "@zj/discount-core";
-import { describeTiers, describeValue } from "./rule-display";
+import { describeBuyXGetY, describeTiers, describeValue, RULE_TYPE_LABELS } from "./rule-display";
 import { draftToFormValues, errorsByFormField, parseRuleForm, utcIsoToZonedDay, zonedDayToUtcIso } from "./rule-form";
 
 const ctx = { shopCurrency: "USD", timezone: "America/New_York" };
@@ -12,8 +12,9 @@ function fd(entries: Array<[string, string]>) {
 const base: Array<[string, string]> = [
   ["title", " Winter sale "],
   ["priority", "3"],
-  ["collectionIds", "gid://shopify/Collection/1"],
-  ["collectionIds", "gid://shopify/Collection/2"],
+  ["targetKind", "COLLECTIONS"],
+  ["targetIds", "gid://shopify/Collection/1"],
+  ["targetIds", "gid://shopify/Collection/2"],
   ["valueKind", "PERCENTAGE"],
   ["percent", "12.5"],
   ["startDate", "2026-12-01"],
@@ -96,8 +97,8 @@ describe("tiered spend form", () => {
     ...rows.flatMap(([t, v]): Array<[string, string]> => [["tierThreshold", t], ["tierValue", v]]),
     ["startDate", "2026-12-01"],
     ["combinesProduct", "on"],
-    // collection fields from the other type are ignored
-    ["collectionIds", "gid://shopify/Collection/1"],
+    // product-set fields from the other types are ignored
+    ["targetIds", "gid://shopify/Collection/1"],
   ];
 
   it("parses percentage tiers in shop-currency minor units and validates", () => {
@@ -134,7 +135,7 @@ describe("tiered spend form", () => {
   it("round-trips through draftToFormValues and describes the tiers", () => {
     const { draft } = parseRuleForm(fd(tieredEntries("PERCENTAGE", [["100", "10"], ["200", "15"]])), ctx);
     const v = draftToFormValues(draft, ctx);
-    expect(v).toMatchObject({ ruleType: "TIERED_SPEND", tierKind: "PERCENTAGE", tiers: [{ threshold: "100.00", value: "10" }, { threshold: "200.00", value: "15" }], collectionIds: [] });
+    expect(v).toMatchObject({ ruleType: "TIERED_SPEND", tierKind: "PERCENTAGE", tiers: [{ threshold: "100.00", value: "10" }, { threshold: "200.00", value: "15" }], targetIds: [] });
     expect(describeTiers(draft.config as never)).toEqual(["Spend $100.00 or more: 10% off", "Spend $200.00 or more: 15% off"]);
     expect(describeValue(draft.config)).toBe("Spend $100.00 or more: 10% off · Spend $200.00 or more: 15% off");
   });
@@ -147,5 +148,76 @@ describe("tiered spend form", () => {
   it("amount-off defaults in draftToFormValues give two empty tier rows", () => {
     const { draft } = parseRuleForm(fd(base), ctx);
     expect(draftToFormValues(draft, ctx).tiers).toEqual([{ threshold: "", value: "" }, { threshold: "", value: "" }]);
+  });
+});
+
+describe("buy X get Y form", () => {
+  const bogoEntries = (o: Record<string, string> = {}, targetKind = "PRODUCTS", ids = ["gid://shopify/Product/1"]): Array<[string, string]> => [
+    ["ruleType", "BUY_X_GET_Y"],
+    ["title", "Buy 2 get 1 free"],
+    ["priority", "4"],
+    ["targetKind", targetKind],
+    ...ids.map((id): [string, string] => ["targetIds", id]),
+    ["buyQuantity", o.buyQuantity ?? "2"],
+    ["getQuantity", o.getQuantity ?? "1"],
+    ["bogoPercent", o.bogoPercent ?? "100"],
+    ["limitPerOrder", o.limitPerOrder ?? "3"],
+    ["startDate", "2026-12-01"],
+    ["combinesOrder", "on"],
+  ];
+
+  it("parses a product-list BOGO rule and validates it", () => {
+    const { draft, errors } = parseRuleForm(fd(bogoEntries()), ctx);
+    expect(errors).toEqual([]);
+    expect(draft.config).toEqual({
+      type: "BUY_X_GET_Y",
+      target: { kind: "PRODUCTS", productIds: ["gid://shopify/Product/1"] },
+      buyQuantity: 2,
+      getQuantity: 1,
+      percent: 100,
+      limitPerOrder: 3,
+    });
+    expect(draft.combinesWith).toEqual({ orderDiscounts: true, productDiscounts: false, shippingDiscounts: false });
+    expect(validateRule(draft)).toEqual([]);
+  });
+
+  it("parses collection targets for BOGO and amount-off alike", () => {
+    const { draft } = parseRuleForm(fd(bogoEntries({}, "COLLECTIONS", ["gid://shopify/Collection/9"])), ctx);
+    expect((draft.config as { target: unknown }).target).toEqual({ kind: "COLLECTIONS", collectionIds: ["gid://shopify/Collection/9"] });
+    const amountOff = parseRuleForm(fd([...base.filter(([k]) => k !== "targetKind" && k !== "targetIds"), ["targetKind", "PRODUCTS"], ["targetIds", "gid://shopify/Product/5"]]), ctx);
+    expect((amountOff.draft.config as AmountOffProductsConfig).target).toEqual({ kind: "PRODUCTS", productIds: ["gid://shopify/Product/5"] });
+  });
+
+  it("maps BOGO validation errors to their fields", () => {
+    const { draft } = parseRuleForm(fd(bogoEntries({ buyQuantity: "0", getQuantity: "", bogoPercent: "150", limitPerOrder: "200" }, "PRODUCTS", [])), ctx);
+    expect(errorsByFormField(validateRule(draft))).toMatchObject({
+      buyQuantity: expect.any(String),
+      getQuantity: expect.any(String),
+      bogoPercent: expect.stringMatching(/100/),
+      limitPerOrder: expect.any(String),
+      targetIds: "Choose at least one product.",
+    });
+  });
+
+  it("round-trips through draftToFormValues", () => {
+    const { draft } = parseRuleForm(fd(bogoEntries({ bogoPercent: "50", limitPerOrder: "1" })), ctx);
+    expect(draftToFormValues(draft, ctx)).toMatchObject({
+      ruleType: "BUY_X_GET_Y",
+      targetKind: "PRODUCTS",
+      targetIds: ["gid://shopify/Product/1"],
+      buyQuantity: "2",
+      getQuantity: "1",
+      bogoPercent: "50",
+      limitPerOrder: "1",
+    });
+  });
+
+  it("previews the offer", () => {
+    const d = (o: Record<string, string>) => parseRuleForm(fd(bogoEntries(o)), ctx).draft.config as never;
+    expect(describeBuyXGetY(d({}))).toBe("Buy 2, get 1 free (up to 3 times per order)");
+    expect(describeBuyXGetY(d({ bogoPercent: "50", limitPerOrder: "1" }))).toBe("Buy 2, get 1 at 50% off (once per order)");
+    expect(describeBuyXGetY(d({ buyQuantity: "", bogoPercent: "" }))).toBe("Buy ?, get 1 at ?% off (up to 3 times per order)");
+    expect(describeValue(d({}))).toBe("Buy 2, get 1 free (up to 3 times per order)");
+    expect(RULE_TYPE_LABELS.BUY_X_GET_Y).toBe("Buy X get Y");
   });
 });

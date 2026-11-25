@@ -10,6 +10,11 @@ export interface CartLine {
   quantity: number;
   /** Line subtotal (unit price × quantity) in the cart's currency, minor units. */
   subtotalMinor: number;
+  /**
+   * Price of one unit, minor units (Shopify's `cost.amountPerQuantity`). When absent
+   * it is derived as subtotalMinor / quantity (rounded).
+   */
+  unitPriceMinor?: number;
   productId?: string;
   variantId?: string | null;
   /**
@@ -47,10 +52,10 @@ export type AmountOffValue =
       appliesToEachItem: boolean;
     };
 
-export type ProductTarget = {
-  kind: "COLLECTIONS";
-  collectionIds: string[];
-};
+/** Which products a product-class rule applies to: whole collections, or a product list. */
+export type ProductTarget =
+  | { kind: "COLLECTIONS"; collectionIds: string[] }
+  | { kind: "PRODUCTS"; productIds: string[] };
 
 export interface AmountOffProductsConfig {
   type: "AMOUNT_OFF_PRODUCTS";
@@ -77,8 +82,26 @@ export interface TieredSpendConfig {
   tiers: SpendTier[];
 }
 
-/** Discriminated union; later rule types (BOGO, bundle, free shipping) join here. */
-export type RuleConfig = AmountOffProductsConfig | TieredSpendConfig;
+/**
+ * Buy X get Y from the same product set. Each "set" is X + Y eligible units; the
+ * cheapest units are discounted (ties: earlier cart line first), Y per set, at most
+ * `limitPerOrder` sets.
+ */
+export interface BuyXGetYConfig {
+  type: "BUY_X_GET_Y";
+  target: ProductTarget;
+  /** X: units that must be bought per set (1–100). */
+  buyQuantity: number;
+  /** Y: units discounted per set (1–100). */
+  getQuantity: number;
+  /** Discount on the Y units: 0 < percent <= 100 (100 = free), at most 2 decimals. */
+  percent: number;
+  /** Maximum number of sets per order (1–100). */
+  limitPerOrder: number;
+}
+
+/** Discriminated union; later rule types (bundle, free shipping) join here. */
+export type RuleConfig = AmountOffProductsConfig | TieredSpendConfig | BuyXGetYConfig;
 export type RuleType = RuleConfig["type"];
 
 export interface CombinesWith {
@@ -118,8 +141,13 @@ export interface EvaluateContext {
 
 export interface LineDiscount {
   lineId: string;
-  /** Discount for the whole line, in cart currency minor units. Always > 0. */
+  /** Discount on this line (on `quantity` units if set), cart currency minor units. Always > 0. */
   amountMinor: number;
+  /**
+   * Number of units of the line the discount covers. Absent = the whole line.
+   * Sent to Shopify as the cart-line target's `quantity`.
+   */
+  quantity?: number;
 }
 
 export interface OrderDiscount {

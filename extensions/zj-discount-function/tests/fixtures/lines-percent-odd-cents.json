@@ -16,12 +16,13 @@
             "id": "gid://shopify/CartLine/1",
             "quantity": 1,
             "cost": {
-              "subtotalAmount": {
+              "amountPerQuantity": {
                 "amount": "3.33"
               }
             },
             "merchandise": {
               "product": {
+                "id": "gid://shopify/Product/1",
                 "inAnyCollection": true
               }
             }
@@ -30,12 +31,13 @@
             "id": "gid://shopify/CartLine/2",
             "quantity": 1,
             "cost": {
-              "subtotalAmount": {
+              "amountPerQuantity": {
                 "amount": "3.33"
               }
             },
             "merchandise": {
               "product": {
+                "id": "gid://shopify/Product/2",
                 "inAnyCollection": true
               }
             }
@@ -44,12 +46,13 @@
             "id": "gid://shopify/CartLine/3",
             "quantity": 1,
             "cost": {
-              "subtotalAmount": {
+              "amountPerQuantity": {
                 "amount": "3.34"
               }
             },
             "merchandise": {
               "product": {
+                "id": "gid://shopify/Product/3",
                 "inAnyCollection": true
               }
             }
@@ -62,7 +65,7 @@
         ],
         "metafield": {
           "jsonValue": {
-            "schemaVersion": 2,
+            "schemaVersion": 3,
             "ruleId": "rule_1",
             "title": "10% off Winter",
             "collectionIds": [

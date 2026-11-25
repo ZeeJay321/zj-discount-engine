@@ -2,8 +2,8 @@
  * Rule validation, shared by the admin form (client) and the route action (server).
  * Returns field-keyed errors; an empty array means the rule is valid.
  */
-import { MAX_LINE_SUBTOTAL_MINOR } from "./rules/amountOffProducts";
-import type { AmountOffProductsConfig, RuleDraft, TieredSpendConfig } from "./types";
+import { MAX_LINE_SUBTOTAL_MINOR } from "./rules/target";
+import type { AmountOffProductsConfig, BuyXGetYConfig, ProductTarget, RuleDraft, TieredSpendConfig } from "./types";
 
 export interface ValidationError {
   /** Dotted path into RuleDraft, e.g. "config.value.percent". */
@@ -14,10 +14,14 @@ export interface ValidationError {
 export type OtherRule = Pick<RuleDraft, "id" | "title" | "enabled" | "priority" | "startsAt" | "endsAt">;
 
 export const MAX_COLLECTIONS_PER_RULE = 50;
+export const MAX_PRODUCTS_PER_RULE = 100;
+export const MAX_BOGO_QUANTITY = 100;
+export const MAX_BOGO_LIMIT_PER_ORDER = 100;
 export const MIN_TIERS = 2;
 export const MAX_TIERS = 5;
 export const MAX_PRIORITY = 1000;
 const COLLECTION_GID = /^gid:\/\/shopify\/Collection\/\d+$/;
+const PRODUCT_GID = /^gid:\/\/shopify\/Product\/\d+$/;
 const CURRENCY = /^[A-Z]{3}$/;
 
 export function validateRule(draft: RuleDraft, others: readonly OtherRule[] = []): ValidationError[] {
@@ -44,6 +48,7 @@ export function validateRule(draft: RuleDraft, others: readonly OtherRule[] = []
   const c = draft.config;
   if (c && c.type === "AMOUNT_OFF_PRODUCTS") validateAmountOffProducts(c, add);
   else if (c && c.type === "TIERED_SPEND") validateTieredSpend(c, add);
+  else if (c && c.type === "BUY_X_GET_Y") validateBuyXGetY(c, add);
   else add("config.type", "Unsupported rule type.");
 
   // Overlap: two enabled rules with the same priority whose date ranges intersect.
@@ -87,14 +92,41 @@ function validateAmountMinor(field: string, amountMinor: unknown, add: Add): boo
   return false;
 }
 
+/** Product set: 1–50 collections or 1–100 products, valid GIDs, no duplicates. */
+function validateTarget(target: ProductTarget | undefined, add: Add) {
+  if (target?.kind === "PRODUCTS") {
+    const f = "config.target.productIds";
+    const ids = Array.isArray(target.productIds) ? target.productIds : [];
+    if (ids.length === 0) add(f, "Choose at least one product.");
+    else if (ids.length > MAX_PRODUCTS_PER_RULE) add(f, `Choose at most ${MAX_PRODUCTS_PER_RULE} products.`);
+    else if (ids.some((id) => !PRODUCT_GID.test(id))) add(f, "Product IDs must be Shopify product GIDs.");
+    else if (new Set(ids).size !== ids.length) add(f, "Products are duplicated.");
+    return;
+  }
+  const f = "config.target.collectionIds";
+  const ids = target?.kind === "COLLECTIONS" && Array.isArray(target.collectionIds) ? target.collectionIds : [];
+  if (ids.length === 0) add(f, "Choose at least one collection.");
+  else if (ids.length > MAX_COLLECTIONS_PER_RULE) add(f, `Choose at most ${MAX_COLLECTIONS_PER_RULE} collections.`);
+  else if (ids.some((id) => !COLLECTION_GID.test(id))) add(f, "Collection IDs must be Shopify collection GIDs.");
+  else if (new Set(ids).size !== ids.length) add(f, "Collections are duplicated.");
+}
+
+function validateIntInRange(field: string, v: unknown, min: number, max: number, label: string, add: Add) {
+  if (typeof v !== "number" || !Number.isInteger(v)) add(field, `Enter a whole number for ${label}.`);
+  else if (v < min || v > max) add(field, `${label[0].toUpperCase()}${label.slice(1)} must be from ${min} to ${max}.`);
+}
+
+/** Buy X get Y: X, Y in 1–100; percent in (0, 100]; limit per order 1–100; a product set. */
+function validateBuyXGetY(c: BuyXGetYConfig, add: Add) {
+  validateTarget(c.target, add);
+  validateIntInRange("config.buyQuantity", c.buyQuantity, 1, MAX_BOGO_QUANTITY, "the buy quantity", add);
+  validateIntInRange("config.getQuantity", c.getQuantity, 1, MAX_BOGO_QUANTITY, "the get quantity", add);
+  validatePercent("config.percent", c.percent, add);
+  validateIntInRange("config.limitPerOrder", c.limitPerOrder, 1, MAX_BOGO_LIMIT_PER_ORDER, "the limit per order", add);
+}
+
 function validateAmountOffProducts(c: AmountOffProductsConfig, add: Add) {
-  const ids = c.target?.collectionIds ?? [];
-  if (ids.length === 0) add("config.target.collectionIds", "Choose at least one collection.");
-  else if (ids.length > MAX_COLLECTIONS_PER_RULE)
-    add("config.target.collectionIds", `Choose at most ${MAX_COLLECTIONS_PER_RULE} collections.`);
-  else if (ids.some((id) => !COLLECTION_GID.test(id)))
-    add("config.target.collectionIds", "Collection IDs must be Shopify collection GIDs.");
-  else if (new Set(ids).size !== ids.length) add("config.target.collectionIds", "Collections are duplicated.");
+  validateTarget(c.target, add);
 
   const v = c.value;
   if (v?.kind === "PERCENTAGE") {

@@ -12,7 +12,7 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { bigCart, fixedOnce, line, linesInput, metafield, pct } from "./lib/fixture-builders.mjs";
+import { bigCart, bogoMetafield, fixedOnce, line, linesInput, metafield, MAX_CART_LINES, pct } from "./lib/fixture-builders.mjs";
 
 const fnDir = join(dirname(fileURLToPath(import.meta.url)), "..", "extensions", "zj-discount-function");
 const perfDir = join(fnDir, "tests", "perf");
@@ -53,12 +53,24 @@ const perfInputs = () =>
     .map((f) => [f.replace(/\.json$/, ""), JSON.parse(readFileSync(join(perfDir, f), "utf8")).payload.input]);
 
 if (args.includes("--sweep")) {
-  // Worst case: every line eligible. Both value kinds; the cap is the smaller N.
-  const variants = { percent: pct(15), "fixed once": fixedOnce(123457) };
+  // Worst case: every line eligible, real-length ids (parsing cost depends on string
+  // length). All product-class rule types; the cap is the smallest N.
+  // IMPORTANT: build the Function with maxCartLines raised above 200 first, otherwise
+  // carts above the current cap return early and the sweep is meaningless.
+  if (MAX_CART_LINES <= 200) {
+    console.error(`maxCartLines is ${MAX_CART_LINES}: raise it above 200 in limits.json, rebuild, then sweep.`);
+    process.exit(1);
+  }
+  const priced = (n) => Array.from({ length: n }, (_, i) => line(i, { unit: (10 + ((i * 37) % 90)).toFixed(2), realistic: true }));
+  const variants = {
+    "amount off %": (n) => linesInput({ metafield: metafield({ value: pct(15) }), lines: bigCart(n, 1, "99.99", () => true, true) }),
+    "amount off fixed once": (n) => linesInput({ metafield: metafield({ value: fixedOnce(123457) }), lines: bigCart(n, 1, "99.99", () => true, true) }),
+    "buy 2 get 1": (n) => linesInput({ metafield: bogoMetafield({ limitPerOrder: 100 }), lines: priced(n) }),
+  };
   const target = BASE_LIMIT * 0.5;
   let cap = Infinity;
-  for (const [label, value] of Object.entries(variants)) {
-    const at = (n) => instructions(linesInput({ metafield: metafield({ value }), lines: bigCart(n) }));
+  for (const [label, build] of Object.entries(variants)) {
+    const at = (n) => instructions(build(n));
     let lo = 1;
     let hi = 200;
     if (at(hi) <= target) lo = hi;
@@ -67,7 +79,7 @@ if (args.includes("--sweep")) {
       if (at(mid) <= target) lo = mid;
       else hi = mid - 1;
     }
-    console.log(`${label.padEnd(10)} largest N at <= 50%: ${lo} lines (${at(lo)} instructions; N+1 = ${at(lo + 1)})`);
+    console.log(`${label.padEnd(22)} largest N at <= 50%: ${lo} lines (${at(lo)} instructions; N+1 = ${at(lo + 1)})`);
     cap = Math.min(cap, lo);
   }
   console.log(`=> measured cap: ${cap} lines`);

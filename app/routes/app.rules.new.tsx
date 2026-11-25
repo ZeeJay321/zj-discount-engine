@@ -11,7 +11,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const values: RuleFormValues = {
     id: "",
-    ruleType: url.searchParams.get("type") === "TIERED_SPEND" ? "TIERED_SPEND" : "AMOUNT_OFF_PRODUCTS",
+    ruleType: ((t) => (t === "TIERED_SPEND" || t === "BUY_X_GET_Y" ? t : "AMOUNT_OFF_PRODUCTS"))(url.searchParams.get("type")),
     title: "",
     priority: String(rules.length ? Math.max(...rules.map((r) => r.priority)) + 1 : 0),
     valueKind: "PERCENTAGE",
@@ -25,7 +25,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ],
     startDate: utcIsoToZonedDay(new Date().toISOString(), ctx.timezone),
     endDate: "",
-    collectionIds: [],
+    targetKind: "COLLECTIONS",
+    targetIds: [],
+    buyQuantity: "2",
+    getQuantity: "1",
+    bogoPercent: "100",
+    limitPerOrder: "1",
     combinesOrder: false,
     combinesProduct: false,
     combinesShipping: true,
@@ -43,7 +48,7 @@ export default function NewRule() {
     <s-page heading="New rule">
       <RuleForm
         values={values}
-        collectionTitles={{}}
+        resourceTitles={{}}
         others={others}
         ctx={ctx}
         serverErrors={actionData && "errors" in actionData ? actionData.errors : undefined}

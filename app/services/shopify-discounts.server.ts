@@ -101,9 +101,12 @@ const SHOP_INFO = `#graphql
     }
   }`;
 
-const COLLECTION_TITLES = `#graphql
-  query ZjCollectionTitles($ids: [ID!]!) {
-    nodes(ids: $ids) { ... on Collection { id title } }
+const RESOURCE_TITLES = `#graphql
+  query ZjResourceTitles($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on Collection { id title }
+      ... on Product { id title }
+    }
   }`;
 
 type MutationPayload = { automaticAppDiscount: { discountId: string } | null; userErrors: UserError[] };
@@ -179,9 +182,10 @@ export async function getShopInfo(gql: AdminGraphql): Promise<ShopInfo> {
   return data.shop;
 }
 
-export async function getCollectionTitles(gql: AdminGraphql, ids: string[]): Promise<Record<string, string>> {
+/** Titles of collections and products (rules' product sets), keyed by GID. */
+export async function getResourceTitles(gql: AdminGraphql, ids: string[]): Promise<Record<string, string>> {
   if (ids.length === 0) return {};
-  const data = await gql<{ nodes: Array<{ id?: string; title?: string } | null> }>(COLLECTION_TITLES, { ids });
+  const data = await gql<{ nodes: Array<{ id?: string; title?: string } | null> }>(RESOURCE_TITLES, { ids });
   const out: Record<string, string> = {};
   for (const n of data.nodes) if (n?.id && n.title) out[n.id] = n.title;
   return out;
