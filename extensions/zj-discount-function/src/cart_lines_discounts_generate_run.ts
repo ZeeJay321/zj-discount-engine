@@ -1,27 +1,33 @@
 import { discountClassFor, evaluateRule, MAX_CART_LINES, parseMetafieldPayload } from "@zj/discount-core";
 import type { CartInput, CartLinesDiscountsGenerateRunResult } from "../generated/api";
-import { toCoreCart, toProductOperations, type LinesInputLike } from "./adapter";
+import { toCoreCart, toCoreOrderCart, toOrderOperations, toProductOperations, type LinesInputLike } from "./adapter";
 
 const NONE: CartLinesDiscountsGenerateRunResult = { operations: [] };
 
 /**
  * Lines/order target. Parses the rule from the discount metafield once, runs the
- * shared core evaluator, and returns exact per-line amounts.
+ * shared core evaluator, and maps the result to Shopify operations.
  * - Dates are NOT checked here: Shopify only runs this while the discount is active.
- * - Carts above MAX_CART_LINES get no discount at all (instruction budget; see README).
+ * - Product rules: carts above MAX_CART_LINES get no discount (instruction budget).
+ * - Order rules (tiered spend): only the cart subtotal is read; no cart-size cap.
  */
 export function cartLinesDiscountsGenerateRun(input: CartInput): CartLinesDiscountsGenerateRunResult {
-  const lineCount = input.cart.lines.length;
-  if (lineCount === 0 || lineCount > MAX_CART_LINES) return NONE;
-
   const parsed = parseMetafieldPayload(input.discount.metafield?.jsonValue);
   if (!parsed.ok) return NONE;
   const payload = parsed.value;
 
   const discountClass = discountClassFor(payload.config);
-  if (discountClass !== "PRODUCT" || !input.discount.discountClasses.includes(discountClass as never)) return NONE;
+  if (!input.discount.discountClasses.includes(discountClass as never)) return NONE;
+  const view = input as unknown as LinesInputLike;
+  const ctx = { presentmentCurrencyRate: input.presentmentCurrencyRate };
 
-  const cart = toCoreCart(input as unknown as LinesInputLike, payload.collectionIds);
-  const result = evaluateRule(payload, cart, { presentmentCurrencyRate: input.presentmentCurrencyRate });
-  return { operations: toProductOperations(result) } as CartLinesDiscountsGenerateRunResult;
+  if (discountClass === "ORDER") {
+    const result = evaluateRule(payload, toCoreOrderCart(view), ctx);
+    return { operations: toOrderOperations(result) } as unknown as CartLinesDiscountsGenerateRunResult;
+  }
+
+  const lineCount = view.cart.lines?.length ?? 0;
+  if (lineCount === 0 || lineCount > MAX_CART_LINES) return NONE;
+  const result = evaluateRule(payload, toCoreCart(view, payload.collectionIds), ctx);
+  return { operations: toProductOperations(result) } as unknown as CartLinesDiscountsGenerateRunResult;
 }

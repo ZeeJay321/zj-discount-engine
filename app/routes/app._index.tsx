@@ -2,8 +2,8 @@ import { useState } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useFetcher, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import { MAX_CART_LINES } from "@zj/discount-core";
-import { describeValue, formatDay } from "../lib/rule-display";
+import { collectionIdsOf, MAX_CART_LINES } from "@zj/discount-core";
+import { describeValue, formatDay, RULE_TYPE_LABELS } from "../lib/rule-display";
 import { appContext } from "../services/app-context.server";
 import { quotaSummary } from "../services/discount-quota.server";
 import { deleteRule, reconcile, retrySync, revertToSynced, setEnabled } from "../services/discount-sync.server";
@@ -16,7 +16,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   await reconcile(deps); // retry rows left PENDING/DELETING by a crash or timeout
   const [rules, store] = await Promise.all([repo.list(shop), checkStore(gql)]);
   const quota = await quotaSummary(gql, rules, new Date());
-  const ids = [...new Set(rules.flatMap((r) => r.config.target.collectionIds))].slice(0, 250);
+  const ids = [...new Set(rules.flatMap((r) => collectionIdsOf(r.config)))].slice(0, 250);
   let titles: Record<string, string> = {};
   try {
     titles = await getCollectionTitles(gql, ids);
@@ -29,8 +29,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     rules: rules.map((r) => ({
       id: r.id,
       title: r.title,
+      type: RULE_TYPE_LABELS[r.config.type],
       value: describeValue(r.config),
-      collections: r.config.target.collectionIds.map((id) => titles[id] ?? id),
+      appliesTo: r.config.type === "TIERED_SPEND" ? "Whole order" : collectionIdsOf(r.config).map((id) => titles[id] ?? id).join(", "),
       starts: formatDay(r.startsAt, store.timezone),
       ends: formatDay(r.endsAt, store.timezone),
       priority: r.priority,
@@ -117,7 +118,7 @@ export default function RulesIndex() {
           <s-text color="subdued">
             Plan: {store.planName}
             {store.isDevelopment ? " (development store)" : store.isPlus ? " (Shopify Plus)" : ""} · Currency {store.currencyCode} · Rules apply to
-            carts of up to {MAX_CART_LINES} lines.
+            carts of up to {MAX_CART_LINES} lines (amount-off rules; tiered spend has no limit).
           </s-text>
         </s-stack>
       </s-section>
@@ -125,13 +126,14 @@ export default function RulesIndex() {
       <s-section heading="Rules" padding="none">
         {rules.length === 0 ? (
           <s-box padding="base">
-            <s-paragraph>No rules yet. Create one to put a discount on a collection.</s-paragraph>
+            <s-paragraph>No rules yet. Create one to put a discount on a collection or a spend-based discount on the order.</s-paragraph>
           </s-box>
         ) : (
           <s-table>
             <s-table-header-row>
               <s-table-header>Rule</s-table-header>
-              <s-table-header>Collections</s-table-header>
+              <s-table-header>Type</s-table-header>
+              <s-table-header>Applies to</s-table-header>
               <s-table-header>Dates</s-table-header>
               <s-table-header>Priority</s-table-header>
               <s-table-header>Status</s-table-header>
@@ -146,7 +148,8 @@ export default function RulesIndex() {
                       <s-text color="subdued">{r.value}</s-text>
                     </s-stack>
                   </s-table-cell>
-                  <s-table-cell>{r.collections.join(", ")}</s-table-cell>
+                  <s-table-cell>{r.type}</s-table-cell>
+                  <s-table-cell>{r.appliesTo}</s-table-cell>
                   <s-table-cell>
                     {r.starts} → {r.ends}
                   </s-table-cell>
@@ -173,6 +176,7 @@ export default function RulesIndex() {
                         </>
                       ) : (
                         <>
+                          <s-button href={`/app/rules/${r.id}`}>Edit</s-button>
                           {(r.syncStatus === "FAILED" || r.syncStatus === "DELETING") && (
                             <s-button onClick={() => act("retry", r.id)}>Retry</s-button>
                           )}

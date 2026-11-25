@@ -1,0 +1,75 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "99.99",
+            "currencyCode": "USD"
+          }
+        },
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/0",
+            "quantity": 1,
+            "cost": {
+              "subtotalAmount": {
+                "amount": "99.99"
+              }
+            },
+            "merchandise": {
+              "product": {
+                "inAnyCollection": true
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "ORDER"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 2,
+            "ruleId": "tiered_1",
+            "title": "Spend more, save more",
+            "collectionIds": [],
+            "includeLines": false,
+            "config": {
+              "type": "TIERED_SPEND",
+              "currencyCode": "USD",
+              "tiers": [
+                {
+                  "thresholdMinor": 10000,
+                  "value": {
+                    "kind": "PERCENTAGE",
+                    "percent": 10
+                  }
+                },
+                {
+                  "thresholdMinor": 20000,
+                  "value": {
+                    "kind": "PERCENTAGE",
+                    "percent": 15
+                  }
+                },
+                {
+                  "thresholdMinor": 30000,
+                  "value": {
+                    "kind": "PERCENTAGE",
+                    "percent": 20
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "output": null
+  }
+}

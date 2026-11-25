@@ -105,6 +105,15 @@ export async function saveRule(deps: SyncDeps, draft: RuleDraft): Promise<SaveRe
   const existing = draft.id ? all.find((r) => r.id === draft.id) ?? null : null;
   if (draft.id && !existing) return { ok: false, errors: [{ field: "form", message: "Rule not found." }] };
 
+  // A Shopify discount's class (PRODUCT / ORDER / …) can't be changed after creation,
+  // and the class follows from the rule type, so the type is fixed once created.
+  if (existing && existing.config.type !== draft.config?.type) {
+    return {
+      ok: false,
+      errors: [{ field: "ruleType", message: "A rule's type can't be changed after it's created. Create a new rule instead." }],
+    };
+  }
+
   const others = all.filter((r) => r.id !== draft.id && r.syncStatus !== "DELETING");
   const errors = validateRule(draft, others);
   if (errors.length) return { ok: false, errors };

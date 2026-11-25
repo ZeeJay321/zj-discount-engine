@@ -33,7 +33,7 @@ function instructions(input) {
 }
 
 function report(name, input) {
-  const lines = input.cart.lines.length;
+  const lines = input.cart.lines?.length ?? 0;
   const n = instructions(input);
   const limit = limitFor(lines);
   const share = (n / limit) * 100;

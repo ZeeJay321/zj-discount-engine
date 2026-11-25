@@ -24,6 +24,11 @@ export interface Cart {
   /** ISO 4217 code of the cart (presentment) currency. */
   currencyCode: string;
   lines: readonly CartLine[];
+  /**
+   * Cart subtotal in minor units, when known without lines (the Function's tiered path
+   * reads only `cart.cost.subtotalAmount`). Otherwise order rules sum the line subtotals.
+   */
+  subtotalMinor?: number;
 }
 
 export type AmountOffValue =
@@ -53,8 +58,27 @@ export interface AmountOffProductsConfig {
   value: AmountOffValue;
 }
 
-/** Discriminated union; later rule types (tiered, BOGO, bundle, free shipping) join here. */
-export type RuleConfig = AmountOffProductsConfig;
+export type TierValue =
+  | { kind: "PERCENTAGE"; percent: number }
+  | { kind: "FIXED_AMOUNT"; amountMinor: number };
+
+export interface SpendTier {
+  /** Spend threshold in the shop currency, minor units. Reached when subtotal >= threshold. */
+  thresholdMinor: number;
+  value: TierValue;
+}
+
+/** Spend X get Y off the order: the highest tier reached applies, to the whole cart subtotal. */
+export interface TieredSpendConfig {
+  type: "TIERED_SPEND";
+  /** Shop base currency (ISO 4217) for thresholds and fixed amounts. */
+  currencyCode: string;
+  /** 2–5 tiers, strictly increasing thresholds, all the same value kind. */
+  tiers: SpendTier[];
+}
+
+/** Discriminated union; later rule types (BOGO, bundle, free shipping) join here. */
+export type RuleConfig = AmountOffProductsConfig | TieredSpendConfig;
 export type RuleType = RuleConfig["type"];
 
 export interface CombinesWith {
@@ -98,11 +122,23 @@ export interface LineDiscount {
   amountMinor: number;
 }
 
+export interface OrderDiscount {
+  /** Discount on the order subtotal, cart currency minor units (> 0). */
+  amountMinor: number;
+  /** Index into the rule's tiers of the tier that applied. */
+  tierIndex: number;
+  /** For percentage tiers: the percent Shopify applies to the order subtotal. */
+  percent: number | null;
+}
+
 export interface RuleResult {
   ruleId: string;
   discountClass: DiscountClass;
   message: string;
   currencyCode: string;
+  /** Product-class rules: per-line discounts. Always [] for order-class rules. */
   lines: LineDiscount[];
+  /** Order-class rules: the order discount, or null when no tier is reached. */
+  order: OrderDiscount | null;
   totalMinor: number;
 }

@@ -21,6 +21,11 @@ description = "t:description"
   command = ""
   path = "dist/function.wasm"
 
+  # Where Shopify admin opens this app's discounts (Discounts list → click / Create).
+  [extensions.ui.paths]
+  create = "/app/discount/:functionId/new"
+  details = "/app/discount/:functionId/:id"
+
   # Top-level keys of the discount's $app/rule-config JSON metafield become input-query
   # variables. We use `collectionIds` for inAnyCollection(ids: $collectionIds).
   [extensions.input.variables]

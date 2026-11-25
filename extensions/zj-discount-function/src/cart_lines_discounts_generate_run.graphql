@@ -1,14 +1,20 @@
 # Keep this query minimal: every field costs instructions to deserialize for every
-# cart line (see scripts/function-perf.mjs). Only what the rule evaluation needs.
-query CartInput($collectionIds: [ID!]) {
+# cart line (see scripts/function-perf.mjs). Only what rule evaluation needs.
+#
+# Variables come from the discount's $app/rule-config metafield (top-level keys):
+# - collectionIds: collections for amount-off-collection rules
+# - includeLines:  false for order rules (tiered spend), which only need the subtotal;
+#                  defaults to true for metafields written before it existed (schema v1).
+query CartInput($collectionIds: [ID!], $includeLines: Boolean = true) {
   presentmentCurrencyRate
   cart {
     cost {
       subtotalAmount {
+        amount
         currencyCode
       }
     }
-    lines {
+    lines @include(if: $includeLines) {
       id
       quantity
       cost {

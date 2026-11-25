@@ -6,9 +6,14 @@ saved as an **automatic app discount**, with the rule's configuration stored in 
 metafield on that discount. The Function reads the metafield through its input query
 and applies the discount at checkout.
 
-**Status:** vertical slice. One rule type, *percentage or fixed amount off one or more
-collections*, works end to end. Tiered spend, buy X get Y, bundles, free shipping and
-the simulator are next.
+**Status:** two rule types work end to end:
+
+| Rule type | Discount class | What it does |
+|---|---|---|
+| Amount off collections | PRODUCT | percentage or fixed amount off items in one or more collections |
+| Tiered spend | ORDER | 2–5 spend thresholds; the highest tier the cart subtotal reaches applies to the whole order |
+
+Buy X get Y, bundles, free shipping and the simulator are next.
 
 ## Layout
 
@@ -88,6 +93,50 @@ Locally, Prisma uses the template's SQLite file (`prisma/dev.sqlite`).
    expired. **Enabling** sends the real dates again. Both use the same single update
    call.
 
+### A rule's type is fixed after creation
+
+Each rule type maps to a Shopify discount class (amount off collections → PRODUCT,
+tiered spend → ORDER), and Shopify can't change the class of an existing discount.
+So the edit form shows the type as read-only, and the server rejects a type change.
+To switch type, create a new rule and delete the old one.
+
+### Tiered spend
+
+- 2–5 tiers. Each has a spend threshold and either a percentage or a fixed amount off
+  the order; all tiers in a rule use the same kind.
+- **Validation:** thresholds must be greater than 0 and strictly increasing; values
+  can't decrease from one tier to the next; percentages must be above 0 and at most
+  100; a fixed amount can't exceed its own threshold. These checks run in the browser
+  and on the server.
+- **Which tier applies:** the highest tier whose threshold the cart subtotal reaches.
+  Exactly at the threshold counts. The subtotal is `cart.cost.subtotalAmount` in the
+  Function input.
+- **Currency:** thresholds and fixed amounts are in the shop currency and converted
+  with `presentmentCurrencyRate`, using integer minor units and the same half-up
+  rounding.
+- **How the discount is sent to Shopify:** percentage tiers are sent as a percentage
+  of the order subtotal, so Shopify applies them after any product discounts the rule
+  combines with. Fixed tiers are sent as the converted amount, clamped so it never
+  exceeds the subtotal.
+- **No collection filtering** in this version.
+- **Combinations:** `combinesWith` (product, order, shipping) is sent exactly as chosen.
+
+### Metafield schema versions
+
+The rule-config metafield has a `schemaVersion`.
+
+- **v1:** amount off collections only.
+- **v2:** adds `includeLines` and the tiered type. The Function reads both, so
+  discounts saved before v2 keep working until they're next edited. Saving always
+  writes v2.
+
+### Opening rules from Shopify admin
+
+The Function's toml declares `[extensions.ui.paths]`. Clicking one of this app's
+discounts in **Shopify admin → Discounts** opens `/app/discount/:functionId/:id`, which
+redirects to that rule's edit page. **Create discount → ZJ Discount Engine** opens the
+new-rule form.
+
 ### Dates are enforced by Shopify, not the Function
 
 The rule's start and end dates are set on the Shopify discount (`startsAt` / `endsAt`),
@@ -107,7 +156,7 @@ test compares like with like: the same input through the Wasm and through
   Priority can't be enforced across separate discounts at checkout: Shopify combines
   discounts according to each discount's combination settings.
 
-## The cart-line cap (`MAX_CART_LINES = 30`)
+## The cart-line cap (`MAX_CART_LINES = 30`, amount-off rules only)
 
 Shopify stops a Function at **11M instructions** for carts up to 200 lines (the limit
 scales up linearly beyond that). The JavaScript Function costs about 1M instructions to
@@ -123,14 +172,26 @@ amount once per order, with every line eligible):
 | 250 lines × 999 qty | 32,698,200 (238%) | 22,057,574 (160%) |
 | 200 lines, input parsing only | 9,229,852 (84%) | 6,446,560 (59%) |
 | 1 line | 1,011,231 (9%) | 1,020,313 (9%) |
-| **30 lines, all eligible (cap)** | n/a | **≈5.0M (45.6%)** |
+| **30 lines, all eligible (cap)** | n/a | **≈5.1M (46.6%)** |
 
 The sweep found **33 lines** to be the largest worst-case cart at or below 50% of the
 limit. The cap is set to **30** to leave margin for real carts, whose line IDs and
 amounts can be longer than the fixtures'. The value lives in
 `packages/discount-core/src/limits.json` and is exported as `MAX_CART_LINES`.
 
-**Above the cap, a rule gives no discount at all, never a partial one.** The Function
+The cap applies only to **amount-off-collection** rules. **Tiered spend has no cart-size
+problem**, so it isn't capped.
+
+- It only needs the cart subtotal. The input query marks the line data with
+  `lines @include(if: $includeLines)`, and tiered rules set `includeLines: false` in
+  their metafield (it defaults to true for v1 metafields).
+- Measured: about **1.19M instructions (10.8%)** with no lines, whatever the cart size.
+- Shopify's docs don't mention directives in Function input queries. If Shopify sends
+  lines anyway, it still works: 1 line 10.2%, 30 lines 18.8%, 200 lines 63.4%. The
+  limit scales with lines above 200, so the share stays about the same for bigger carts.
+- The Function run log in the Dev Dashboard shows which of the two happened.
+
+**Above the cap, an amount-off rule gives no discount at all, never a partial one.** The Function
 checks the raw line count first and returns no operations; core's `evaluateRule` does
 the same, so the simulator agrees. A cart above the cap still costs about 58% of the
 limit just to read, so large carts never fail; they simply get no discount. The cap is

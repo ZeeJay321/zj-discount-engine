@@ -3,7 +3,7 @@
  * Returns field-keyed errors; an empty array means the rule is valid.
  */
 import { MAX_LINE_SUBTOTAL_MINOR } from "./rules/amountOffProducts";
-import type { RuleDraft } from "./types";
+import type { AmountOffProductsConfig, RuleDraft, TieredSpendConfig } from "./types";
 
 export interface ValidationError {
   /** Dotted path into RuleDraft, e.g. "config.value.percent". */
@@ -14,6 +14,8 @@ export interface ValidationError {
 export type OtherRule = Pick<RuleDraft, "id" | "title" | "enabled" | "priority" | "startsAt" | "endsAt">;
 
 export const MAX_COLLECTIONS_PER_RULE = 50;
+export const MIN_TIERS = 2;
+export const MAX_TIERS = 5;
 export const MAX_PRIORITY = 1000;
 const COLLECTION_GID = /^gid:\/\/shopify\/Collection\/\d+$/;
 const CURRENCY = /^[A-Z]{3}$/;
@@ -40,35 +42,9 @@ export function validateRule(draft: RuleDraft, others: readonly OtherRule[] = []
 
   // Config
   const c = draft.config;
-  if (!c || c.type !== "AMOUNT_OFF_PRODUCTS") {
-    add("config.type", "Unsupported rule type.");
-  } else {
-    const ids = c.target?.collectionIds ?? [];
-    if (ids.length === 0) add("config.target.collectionIds", "Choose at least one collection.");
-    else if (ids.length > MAX_COLLECTIONS_PER_RULE)
-      add("config.target.collectionIds", `Choose at most ${MAX_COLLECTIONS_PER_RULE} collections.`);
-    else if (ids.some((id) => !COLLECTION_GID.test(id)))
-      add("config.target.collectionIds", "Collection IDs must be Shopify collection GIDs.");
-    else if (new Set(ids).size !== ids.length) add("config.target.collectionIds", "Collections are duplicated.");
-
-    const v = c.value;
-    if (v?.kind === "PERCENTAGE") {
-      if (typeof v.percent !== "number" || !Number.isFinite(v.percent)) add("config.value.percent", "Enter a percentage.");
-      else if (v.percent <= 0) add("config.value.percent", "Percentage must be greater than 0.");
-      else if (v.percent > 100) add("config.value.percent", "Percentage cannot be more than 100.");
-      else if (Math.abs(v.percent * 100 - Math.round(v.percent * 100)) > 1e-9)
-        add("config.value.percent", "Use at most 2 decimal places.");
-    } else if (v?.kind === "FIXED_AMOUNT") {
-      if (!Number.isSafeInteger(v.amountMinor)) add("config.value.amount", "Enter an amount.");
-      else if (v.amountMinor <= 0) add("config.value.amount", "Amount must be greater than 0.");
-      else if (v.amountMinor > MAX_LINE_SUBTOTAL_MINOR) add("config.value.amount", "Amount is too large.");
-      if (typeof v.currencyCode !== "string" || !CURRENCY.test(v.currencyCode))
-        add("config.value.currencyCode", "Currency code is invalid.");
-      if (typeof v.appliesToEachItem !== "boolean") add("config.value.appliesToEachItem", "Choose how the amount applies.");
-    } else {
-      add("config.value.kind", "Choose percentage or fixed amount.");
-    }
-  }
+  if (c && c.type === "AMOUNT_OFF_PRODUCTS") validateAmountOffProducts(c, add);
+  else if (c && c.type === "TIERED_SPEND") validateTieredSpend(c, add);
+  else add("config.type", "Unsupported rule type.");
 
   // Overlap: two enabled rules with the same priority whose date ranges intersect.
   if (draft.enabled && errors.every((e) => !e.field.startsWith("startsAt") && !e.field.startsWith("endsAt") && e.field !== "priority")) {
@@ -90,4 +66,94 @@ export function rangesOverlap(aStart: number, aEnd: number | null, bStart: numbe
   const aEndsAfterBStarts = aEnd === null || aEnd > bStart;
   const bEndsAfterAStarts = bEnd === null || bEnd > aStart;
   return aEndsAfterBStarts && bEndsAfterAStarts;
+}
+
+type Add = (field: string, message: string) => void;
+
+function validatePercent(field: string, percent: unknown, add: Add): boolean {
+  if (typeof percent !== "number" || !Number.isFinite(percent)) add(field, "Enter a percentage.");
+  else if (percent <= 0) add(field, "Percentage must be greater than 0.");
+  else if (percent > 100) add(field, "Percentage cannot be more than 100.");
+  else if (Math.abs(percent * 100 - Math.round(percent * 100)) > 1e-9) add(field, "Use at most 2 decimal places.");
+  else return true;
+  return false;
+}
+
+function validateAmountMinor(field: string, amountMinor: unknown, add: Add): boolean {
+  if (typeof amountMinor !== "number" || !Number.isSafeInteger(amountMinor)) add(field, "Enter an amount.");
+  else if (amountMinor <= 0) add(field, "Amount must be greater than 0.");
+  else if (amountMinor > MAX_LINE_SUBTOTAL_MINOR) add(field, "Amount is too large.");
+  else return true;
+  return false;
+}
+
+function validateAmountOffProducts(c: AmountOffProductsConfig, add: Add) {
+  const ids = c.target?.collectionIds ?? [];
+  if (ids.length === 0) add("config.target.collectionIds", "Choose at least one collection.");
+  else if (ids.length > MAX_COLLECTIONS_PER_RULE)
+    add("config.target.collectionIds", `Choose at most ${MAX_COLLECTIONS_PER_RULE} collections.`);
+  else if (ids.some((id) => !COLLECTION_GID.test(id)))
+    add("config.target.collectionIds", "Collection IDs must be Shopify collection GIDs.");
+  else if (new Set(ids).size !== ids.length) add("config.target.collectionIds", "Collections are duplicated.");
+
+  const v = c.value;
+  if (v?.kind === "PERCENTAGE") {
+    validatePercent("config.value.percent", v.percent, add);
+  } else if (v?.kind === "FIXED_AMOUNT") {
+    validateAmountMinor("config.value.amount", v.amountMinor, add);
+    if (typeof v.currencyCode !== "string" || !CURRENCY.test(v.currencyCode))
+      add("config.value.currencyCode", "Currency code is invalid.");
+    if (typeof v.appliesToEachItem !== "boolean") add("config.value.appliesToEachItem", "Choose how the amount applies.");
+  } else {
+    add("config.value.kind", "Choose percentage or fixed amount.");
+  }
+}
+
+/**
+ * Tiered spend: 2–5 tiers; thresholds > 0 and strictly increasing; every tier uses the
+ * same kind (so "never decreases" is well defined); values never decrease from one
+ * tier to the next; a fixed discount can't exceed its own threshold.
+ */
+function validateTieredSpend(c: TieredSpendConfig, add: Add) {
+  if (typeof c.currencyCode !== "string" || !CURRENCY.test(c.currencyCode)) add("config.currencyCode", "Currency code is invalid.");
+  const tiers = Array.isArray(c.tiers) ? c.tiers : [];
+  if (tiers.length < MIN_TIERS || tiers.length > MAX_TIERS) {
+    add("config.tiers", `Add between ${MIN_TIERS} and ${MAX_TIERS} tiers.`);
+    if (tiers.length === 0) return;
+  }
+  const kind = tiers[0]?.value?.kind;
+  if (kind !== "PERCENTAGE" && kind !== "FIXED_AMOUNT") {
+    add("config.tiers.0.value", "Choose percentage or fixed amount.");
+    return;
+  }
+  let prevThreshold: number | null = null;
+  let prevValue: number | null = null;
+  tiers.forEach((t, i) => {
+    const tf = `config.tiers.${i}.threshold`;
+    const vf = `config.tiers.${i}.value`;
+    let thresholdOk = false;
+    if (typeof t?.thresholdMinor !== "number" || !Number.isSafeInteger(t.thresholdMinor)) add(tf, "Enter a spend amount.");
+    else if (t.thresholdMinor <= 0) add(tf, "Spend amount must be greater than 0.");
+    else if (t.thresholdMinor > MAX_LINE_SUBTOTAL_MINOR) add(tf, "Spend amount is too large.");
+    else if (prevThreshold !== null && t.thresholdMinor <= prevThreshold) add(tf, "Each tier must need more spend than the one before.");
+    else thresholdOk = true;
+    if (typeof t?.thresholdMinor === "number" && Number.isSafeInteger(t.thresholdMinor) && t.thresholdMinor > 0) {
+      prevThreshold = t.thresholdMinor;
+    }
+
+    const v = t?.value;
+    if (!v || v.kind !== kind) {
+      add(vf, "All tiers must use the same discount type.");
+      return;
+    }
+    const n = v.kind === "PERCENTAGE" ? v.percent : v.amountMinor;
+    const ok = v.kind === "PERCENTAGE" ? validatePercent(vf, v.percent, add) : validateAmountMinor(vf, v.amountMinor, add);
+    if (!ok) return;
+    if (v.kind === "FIXED_AMOUNT" && thresholdOk && v.amountMinor > t.thresholdMinor) {
+      add(vf, "The discount can't be more than the spend amount for this tier.");
+      return;
+    }
+    if (prevValue !== null && n < prevValue) add(vf, "A higher tier can't give a smaller discount than the tier before.");
+    prevValue = n;
+  });
 }

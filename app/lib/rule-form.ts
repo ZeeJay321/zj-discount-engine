@@ -4,11 +4,15 @@
  * Dates are entered as shop-local calendar days and stored as UTC instants.
  */
 import {
+  collectionIdsOf,
   currencyExponent,
   formatMinor,
   parseDecimalToMinor,
+  type AmountOffProductsConfig,
   type RuleConfig,
   type RuleDraft,
+  type RuleType,
+  type SpendTier,
   type ValidationError,
 } from "@zj/discount-core";
 
@@ -32,28 +36,43 @@ const num = (s: string) => (s === "" ? Number.NaN : Number(s));
 
 export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
   const errors: ValidationError[] = [];
-  const valueKind = str(fd, "valueKind") === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE";
-  const collectionIds = fd
-    .getAll("collectionIds")
-    .filter((v): v is string => typeof v === "string" && v !== "");
-
-  let value: RuleConfig["value"];
-  if (valueKind === "PERCENTAGE") {
-    value = { kind: "PERCENTAGE", percent: num(str(fd, "percent")) };
-  } else {
-    let amountMinor = Number.NaN;
-    const raw = str(fd, "amount");
+  const ruleType: RuleType = str(fd, "ruleType") === "TIERED_SPEND" ? "TIERED_SPEND" : "AMOUNT_OFF_PRODUCTS";
+  const exp = currencyExponent(ctx.shopCurrency);
+  const amount = (raw: string, field: string, emptyMessage: string): number => {
     try {
-      amountMinor = parseDecimalToMinor(raw, currencyExponent(ctx.shopCurrency));
+      return parseDecimalToMinor(raw, exp);
     } catch {
-      errors.push({ field: "config.value.amount", message: raw ? "Enter a valid amount, e.g. 5.00." : "Enter an amount." });
+      errors.push({ field, message: raw ? "Enter a valid amount, e.g. 5.00." : emptyMessage });
+      return Number.NaN;
     }
-    value = {
-      kind: "FIXED_AMOUNT",
-      amountMinor,
-      currencyCode: ctx.shopCurrency,
-      appliesToEachItem: str(fd, "appliesTo") !== "once",
-    };
+  };
+
+  let config: RuleConfig;
+  if (ruleType === "TIERED_SPEND") {
+    const kind = str(fd, "tierKind") === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE";
+    const thresholds = fd.getAll("tierThreshold").map((v) => (typeof v === "string" ? v.trim() : ""));
+    const values = fd.getAll("tierValue").map((v) => (typeof v === "string" ? v.trim() : ""));
+    const tiers: SpendTier[] = thresholds.map((t, i) => ({
+      thresholdMinor: amount(t, `config.tiers.${i}.threshold`, "Enter a spend amount."),
+      value:
+        kind === "PERCENTAGE"
+          ? { kind: "PERCENTAGE", percent: num(values[i] ?? "") }
+          : { kind: "FIXED_AMOUNT", amountMinor: amount(values[i] ?? "", `config.tiers.${i}.value`, "Enter an amount.") },
+    }));
+    config = { type: "TIERED_SPEND", currencyCode: ctx.shopCurrency, tiers };
+  } else {
+    const valueKind = str(fd, "valueKind") === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE";
+    const collectionIds = fd.getAll("collectionIds").filter((v): v is string => typeof v === "string" && v !== "");
+    const value: AmountOffProductsConfig["value"] =
+      valueKind === "PERCENTAGE"
+        ? { kind: "PERCENTAGE", percent: num(str(fd, "percent")) }
+        : {
+            kind: "FIXED_AMOUNT",
+            amountMinor: amount(str(fd, "amount"), "config.value.amount", "Enter an amount."),
+            currencyCode: ctx.shopCurrency,
+            appliesToEachItem: str(fd, "appliesTo") !== "once",
+          };
+    config = { type: "AMOUNT_OFF_PRODUCTS", target: { kind: "COLLECTIONS", collectionIds }, value };
   }
 
   const startDate = str(fd, "startDate");
@@ -70,25 +89,40 @@ export function parseRuleForm(fd: FormData, ctx: FormContext): ParsedRuleForm {
       productDiscounts: fd.get("combinesProduct") !== null,
       shippingDiscounts: fd.get("combinesShipping") !== null,
     },
-    config: { type: "AMOUNT_OFF_PRODUCTS", target: { kind: "COLLECTIONS", collectionIds }, value },
+    config,
   };
   return { draft, errors };
 }
 
 /** Values to pre-fill the form with (edit page). */
 export function draftToFormValues(draft: RuleDraft, ctx: FormContext) {
-  const v = draft.config.value;
+  const c = draft.config;
+  const money = (minor: number, currency: string) => formatMinor(minor, currencyExponent(currency));
+  const v = c.type === "AMOUNT_OFF_PRODUCTS" ? c.value : null;
+  const tiers =
+    c.type === "TIERED_SPEND"
+      ? c.tiers.map((t) => ({
+          threshold: money(t.thresholdMinor, c.currencyCode),
+          value: t.value.kind === "PERCENTAGE" ? String(t.value.percent) : money(t.value.amountMinor, c.currencyCode),
+        }))
+      : [
+          { threshold: "", value: "" },
+          { threshold: "", value: "" },
+        ];
   return {
     id: draft.id ?? "",
+    ruleType: c.type,
     title: draft.title,
     priority: String(draft.priority),
-    valueKind: v.kind,
-    percent: v.kind === "PERCENTAGE" ? String(v.percent) : "",
-    amount: v.kind === "FIXED_AMOUNT" ? formatMinor(v.amountMinor, currencyExponent(v.currencyCode)) : "",
-    appliesTo: v.kind === "FIXED_AMOUNT" && !v.appliesToEachItem ? "once" : "each",
+    valueKind: v ? v.kind : ("PERCENTAGE" as const),
+    percent: v?.kind === "PERCENTAGE" ? String(v.percent) : "",
+    amount: v?.kind === "FIXED_AMOUNT" ? money(v.amountMinor, v.currencyCode) : "",
+    appliesTo: v?.kind === "FIXED_AMOUNT" && !v.appliesToEachItem ? ("once" as const) : ("each" as const),
+    tierKind: c.type === "TIERED_SPEND" ? c.tiers[0]?.value.kind ?? "PERCENTAGE" : ("PERCENTAGE" as const),
+    tiers,
     startDate: draft.startsAt ? utcIsoToZonedDay(draft.startsAt, ctx.timezone) : "",
     endDate: draft.endsAt ? utcIsoToZonedDay(draft.endsAt, ctx.timezone) : "",
-    collectionIds: draft.config.target.collectionIds,
+    collectionIds: collectionIdsOf(c),
     combinesOrder: draft.combinesWith.orderDiscounts,
     combinesProduct: draft.combinesWith.productDiscounts,
     combinesShipping: draft.combinesWith.shippingDiscounts,
@@ -108,12 +142,16 @@ export function errorsByFormField(errors: ValidationError[]): Record<string, str
     "config.value.currencyCode": "amount",
     "config.value.appliesToEachItem": "appliesTo",
     "config.value.kind": "valueKind",
-    "config.type": "valueKind",
+    "config.type": "form",
+    "config.tiers": "tiers",
+    "config.currencyCode": "tiers",
+    ruleType: "form",
     enabled: "form",
   };
   const out: Record<string, string> = {};
   for (const e of errors) {
-    const key = map[e.field] ?? "form";
+    const tier = /^config\.tiers\.(\d+)\.(threshold|value)$/.exec(e.field);
+    const key = tier ? `${tier[2] === "threshold" ? "tierThreshold" : "tierValue"}.${tier[1]}` : map[e.field] ?? "form";
     if (!out[key]) out[key] = e.message;
   }
   return out;

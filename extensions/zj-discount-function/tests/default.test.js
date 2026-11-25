@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs";
 import { describe, beforeAll, test, expect } from "vitest";
 import { buildFunction, getFunctionInfo, loadSchema, loadInputQuery, loadFixture, validateTestAssets, runFunction } from "@shopify/shopify-function-test-helpers";
+import { applyDirectives, inputVariables } from "./query-variables.js";
 
 describe("Default Integration Test", () => {
   let schema;
@@ -30,7 +31,10 @@ describe("Default Integration Test", () => {
     test(`runs ${path.relative(fixturesDir, fixtureFile)}`, async () => {
       const fixture = await loadFixture(fixtureFile);
       const targetInputQueryPath = targeting[fixture.target].inputQueryPath;
-      const inputQueryAST = await loadInputQuery(targetInputQueryPath);
+      const rawQueryAST = await loadInputQuery(targetInputQueryPath);
+      // Validate against the query as Shopify resolves it for this fixture's variables
+      // (e.g. order rules set includeLines=false, so `lines` is not sent).
+      const inputQueryAST = applyDirectives(rawQueryAST, inputVariables(rawQueryAST, fixture.input));
 
       const validationResult = await validateTestAssets({ schema, fixture, inputQueryAST });
       expect(validationResult.inputQuery.errors).toEqual([]);

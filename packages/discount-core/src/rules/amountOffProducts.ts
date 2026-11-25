@@ -89,6 +89,7 @@ export function evaluateAmountOffProducts(
     message: rule.title,
     currencyCode: cart.currencyCode,
     lines,
+    order: null,
     totalMinor,
   };
 }

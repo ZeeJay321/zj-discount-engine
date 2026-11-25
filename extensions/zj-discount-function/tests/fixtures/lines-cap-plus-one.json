@@ -7,6 +7,7 @@
       "cart": {
         "cost": {
           "subtotalAmount": {
+            "amount": "310.00",
             "currencyCode": "USD"
           }
         },
@@ -453,12 +454,13 @@
         ],
         "metafield": {
           "jsonValue": {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "ruleId": "rule_1",
             "title": "10% off Winter",
             "collectionIds": [
               "gid://shopify/Collection/100"
             ],
+            "includeLines": true,
             "config": {
               "type": "AMOUNT_OFF_PRODUCTS",
               "target": {

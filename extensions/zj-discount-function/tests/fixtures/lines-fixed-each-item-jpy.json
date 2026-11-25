@@ -7,6 +7,7 @@
       "cart": {
         "cost": {
           "subtotalAmount": {
+            "amount": "5000",
             "currencyCode": "JPY"
           }
         },
@@ -47,12 +48,13 @@
         ],
         "metafield": {
           "jsonValue": {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "ruleId": "rule_1",
             "title": "$5 off each",
             "collectionIds": [
               "gid://shopify/Collection/100"
             ],
+            "includeLines": true,
             "config": {
               "type": "AMOUNT_OFF_PRODUCTS",
               "target": {

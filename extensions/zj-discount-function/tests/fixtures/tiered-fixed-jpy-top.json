@@ -1,0 +1,76 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "150.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "20000",
+            "currencyCode": "JPY"
+          }
+        }
+      },
+      "discount": {
+        "discountClasses": [
+          "ORDER"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 2,
+            "ruleId": "tiered_1",
+            "title": "Spend & save",
+            "collectionIds": [],
+            "includeLines": false,
+            "config": {
+              "type": "TIERED_SPEND",
+              "currencyCode": "USD",
+              "tiers": [
+                {
+                  "thresholdMinor": 5000,
+                  "value": {
+                    "kind": "FIXED_AMOUNT",
+                    "amountMinor": 500
+                  }
+                },
+                {
+                  "thresholdMinor": 10000,
+                  "value": {
+                    "kind": "FIXED_AMOUNT",
+                    "amountMinor": 1500
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "orderDiscountsAdd": {
+            "candidates": [
+              {
+                "targets": [
+                  {
+                    "orderSubtotal": {
+                      "excludedCartLineIds": []
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 2250
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "FIRST"
+          }
+        }
+      ]
+    }
+  }
+}

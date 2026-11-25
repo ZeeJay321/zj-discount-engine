@@ -11,7 +11,22 @@ export const MAX_CART_LINES = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "discount-core", "src", "limits.json"), "utf8"),
 ).maxCartLines;
 
+/** Amount-off-collection rule metafield (current schema v2). */
 export function metafield({ ruleId = "rule_1", title = "10% off Winter", collectionIds = [C100], value }) {
+  return {
+    jsonValue: {
+      schemaVersion: 2,
+      ruleId,
+      title,
+      collectionIds,
+      includeLines: true,
+      config: { type: "AMOUNT_OFF_PRODUCTS", target: { kind: "COLLECTIONS", collectionIds }, value },
+    },
+  };
+}
+
+/** Same rule as written before tiered spend existed (schema v1, no includeLines). */
+export function metafieldV1({ ruleId = "rule_1", title = "10% off Winter", collectionIds = [C100], value }) {
   return {
     jsonValue: {
       schemaVersion: 1,
@@ -19,6 +34,24 @@ export function metafield({ ruleId = "rule_1", title = "10% off Winter", collect
       title,
       collectionIds,
       config: { type: "AMOUNT_OFF_PRODUCTS", target: { kind: "COLLECTIONS", collectionIds }, value },
+    },
+  };
+}
+
+/** Tiered-spend rule metafield: tiers = [[thresholdMinor, value], ...] in shop currency. */
+export function tieredMetafield({ ruleId = "tiered_1", title = "Spend more, save more", currencyCode = "USD", tiers }) {
+  return {
+    jsonValue: {
+      schemaVersion: 2,
+      ruleId,
+      title,
+      collectionIds: [],
+      includeLines: false,
+      config: {
+        type: "TIERED_SPEND",
+        currencyCode,
+        tiers: tiers.map(([thresholdMinor, value]) => ({ thresholdMinor, value })),
+      },
     },
   };
 }
@@ -37,10 +70,22 @@ export function customLine(n, amount) {
   return { id: `gid://shopify/CartLine/${n}`, quantity: 1, cost: { subtotalAmount: { amount } }, merchandise: {} };
 }
 
-export function linesInput({ lines, metafield: mf, discountClasses = ["PRODUCT"], rate = "1.0", currencyCode = "USD" }) {
+/** Cart-lines input. `subtotal` defaults to the sum of the line amounts. */
+export function linesInput({ lines, metafield: mf, discountClasses = ["PRODUCT"], rate = "1.0", currencyCode = "USD", subtotal }) {
+  const sum = lines.reduce((a, l) => a + Number(l.cost.subtotalAmount.amount), 0);
+  const amount = subtotal ?? (currencyCode === "JPY" ? String(Math.round(sum)) : sum.toFixed(2));
   return {
     presentmentCurrencyRate: rate,
-    cart: { cost: { subtotalAmount: { currencyCode } }, lines },
+    cart: { cost: { subtotalAmount: { amount, currencyCode } }, lines },
+    discount: { discountClasses, metafield: mf ?? null },
+  };
+}
+
+/** Order-rule input as Shopify sends it when includeLines=false: no lines at all. */
+export function orderInput({ subtotal, metafield: mf, discountClasses = ["ORDER"], rate = "1.0", currencyCode = "USD" }) {
+  return {
+    presentmentCurrencyRate: rate,
+    cart: { cost: { subtotalAmount: { amount: subtotal, currencyCode } } },
     discount: { discountClasses, metafield: mf ?? null },
   };
 }
@@ -68,3 +113,5 @@ export function bigCart(lineCount, quantity = 1, unit = "99.99", eligible = () =
 export const pct = (percent) => ({ kind: "PERCENTAGE", percent });
 export const fixedOnce = (amountMinor, currencyCode = "USD") => ({ kind: "FIXED_AMOUNT", amountMinor, currencyCode, appliesToEachItem: false });
 export const fixedEach = (amountMinor, currencyCode = "USD") => ({ kind: "FIXED_AMOUNT", amountMinor, currencyCode, appliesToEachItem: true });
+export const tierPct = (percent) => ({ kind: "PERCENTAGE", percent });
+export const tierFixed = (amountMinor) => ({ kind: "FIXED_AMOUNT", amountMinor });

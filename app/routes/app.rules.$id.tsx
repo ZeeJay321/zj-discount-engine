@@ -2,6 +2,7 @@ import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "re
 import { useActionData, useFetcher, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { RuleForm, type RuleFormValues } from "../components/RuleForm";
+import { collectionIdsOf } from "@zj/discount-core";
 import { draftToFormValues } from "../lib/rule-form";
 import { retrySync, revertToSynced } from "../services/discount-sync.server";
 import { formPageContext, handleSave, othersFor } from "../services/rule-form-action.server";
@@ -15,7 +16,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const values = draftToFormValues({ ...rule, id: rule.id }, ctx) as RuleFormValues;
   let collectionTitles: Record<string, string> = {};
   try {
-    collectionTitles = await getCollectionTitles(gql, rule.config.target.collectionIds);
+    collectionTitles = await getCollectionTitles(gql, collectionIdsOf(rule.config));
   } catch {
     // titles are cosmetic; fall back to IDs
   }
@@ -84,6 +85,7 @@ export default function EditRule() {
         serverErrors={actionData && "errors" in actionData ? (actionData.errors as Record<string, string>) : undefined}
         submitting={nav.state === "submitting"}
         submitLabel="Save rule"
+        isEdit
       />
     </s-page>
   );

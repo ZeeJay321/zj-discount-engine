@@ -1,0 +1,114 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "presentmentCurrencyRate": "1.0",
+      "cart": {
+        "cost": {
+          "subtotalAmount": {
+            "amount": "29.99",
+            "currencyCode": "USD"
+          }
+        },
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 2,
+            "cost": {
+              "subtotalAmount": {
+                "amount": "20.0"
+              }
+            },
+            "merchandise": {
+              "product": {
+                "inAnyCollection": true
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/2",
+            "quantity": 1,
+            "cost": {
+              "subtotalAmount": {
+                "amount": "9.99"
+              }
+            },
+            "merchandise": {
+              "product": {
+                "inAnyCollection": true
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "schemaVersion": 1,
+            "ruleId": "rule_1",
+            "title": "10% off Winter",
+            "collectionIds": [
+              "gid://shopify/Collection/100"
+            ],
+            "config": {
+              "type": "AMOUNT_OFF_PRODUCTS",
+              "target": {
+                "kind": "COLLECTIONS",
+                "collectionIds": [
+                  "gid://shopify/Collection/100"
+                ]
+              },
+              "value": {
+                "kind": "PERCENTAGE",
+                "percent": 10
+              }
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "productDiscountsAdd": {
+            "candidates": [
+              {
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/1"
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 2
+                  }
+                }
+              },
+              {
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/2"
+                    }
+                  }
+                ],
+                "value": {
+                  "fixedAmount": {
+                    "amount": 1
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "ALL"
+          }
+        }
+      ]
+    }
+  }
+}

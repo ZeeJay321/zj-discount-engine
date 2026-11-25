@@ -8,14 +8,21 @@ import { formPageContext, handleSave, othersFor } from "../services/rule-form-ac
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { repo, shop, ctx } = await formPageContext(request);
   const rules = await repo.list(shop);
+  const url = new URL(request.url);
   const values: RuleFormValues = {
     id: "",
+    ruleType: url.searchParams.get("type") === "TIERED_SPEND" ? "TIERED_SPEND" : "AMOUNT_OFF_PRODUCTS",
     title: "",
     priority: String(rules.length ? Math.max(...rules.map((r) => r.priority)) + 1 : 0),
     valueKind: "PERCENTAGE",
     percent: "10",
     amount: "",
     appliesTo: "each",
+    tierKind: "PERCENTAGE",
+    tiers: [
+      { threshold: "", value: "" },
+      { threshold: "", value: "" },
+    ],
     startDate: utcIsoToZonedDay(new Date().toISOString(), ctx.timezone),
     endDate: "",
     collectionIds: [],
@@ -42,6 +49,7 @@ export default function NewRule() {
         serverErrors={actionData && "errors" in actionData ? actionData.errors : undefined}
         submitting={nav.state === "submitting"}
         submitLabel="Create rule"
+        isEdit={false}
       />
     </s-page>
   );

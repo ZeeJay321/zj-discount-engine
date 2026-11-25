@@ -17,8 +17,9 @@ import {
 export interface LinesInputLike {
   presentmentCurrencyRate: string | number;
   cart: {
-    cost: { subtotalAmount: { currencyCode: string } };
-    lines: ReadonlyArray<{
+    cost: { subtotalAmount: { amount: string | number; currencyCode: string } };
+    /** Absent when the rule sets includeLines=false (order rules). */
+    lines?: ReadonlyArray<{
       id: string;
       quantity: number;
       cost: { subtotalAmount: { amount: string | number } };
@@ -30,7 +31,7 @@ export interface LinesInputLike {
 export function toCoreCart(input: LinesInputLike, collectionIds: readonly string[]): Cart {
   const currencyCode = input.cart.cost.subtotalAmount.currencyCode;
   const exp = currencyExponent(currencyCode);
-  const src = input.cart.lines;
+  const src = input.cart.lines ?? [];
   const lines: CartLine[] = [];
   for (let i = 0; i < src.length; i++) {
     const line = src[i];
@@ -69,4 +70,39 @@ export function toProductOperations(result: RuleResult) {
     };
   }
   return [{ productDiscountsAdd: { candidates, selectionStrategy: "ALL" as const } }];
+}
+
+/** Order rules only need the subtotal Shopify reports; no line data is read. */
+export function toCoreOrderCart(input: LinesInputLike): Cart {
+  const { amount, currencyCode } = input.cart.cost.subtotalAmount;
+  let subtotalMinor = 0;
+  try {
+    subtotalMinor = decimalToMinor(amount, currencyExponent(currencyCode));
+  } catch {
+    subtotalMinor = 0;
+  }
+  return { currencyCode, lines: [], subtotalMinor };
+}
+
+/**
+ * Order-class operation on the order subtotal. Percentage tiers are sent as a
+ * percentage, so Shopify applies them to the subtotal it discounts (after any product
+ * discounts this combines with); fixed tiers are sent as the exact converted, clamped
+ * amount. No message: Shopify shows the discount's title.
+ */
+export function toOrderOperations(result: RuleResult) {
+  const order = result.order;
+  if (order === null) return [];
+  const value =
+    order.percent !== null
+      ? { percentage: { value: order.percent } }
+      : { fixedAmount: { amount: minorToNumber(order.amountMinor, currencyExponent(result.currencyCode)) } };
+  return [
+    {
+      orderDiscountsAdd: {
+        candidates: [{ targets: [{ orderSubtotal: { excludedCartLineIds: [] } }], value }],
+        selectionStrategy: "FIRST" as const,
+      },
+    },
+  ];
 }

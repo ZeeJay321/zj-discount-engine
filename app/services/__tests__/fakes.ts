@@ -1,4 +1,4 @@
-import type { RuleConfig } from "@zj/discount-core";
+import type { AmountOffProductsConfig } from "@zj/discount-core";
 import type { RulePatch, RuleRecord, RuleRepo, RuleSnapshot, SyncEventInput } from "../rule-repo.server";
 import type { AdminGraphql } from "../shopify-discounts.server";
 
@@ -91,7 +91,7 @@ export const appDiscounts = (nodes: Array<{ id: string; ruleId?: string }>) => (
   },
 });
 
-export const pct10: RuleConfig = {
+export const pct10: AmountOffProductsConfig = {
   type: "AMOUNT_OFF_PRODUCTS",
   target: { kind: "COLLECTIONS", collectionIds: [C1] },
   value: { kind: "PERCENTAGE", percent: 10 },

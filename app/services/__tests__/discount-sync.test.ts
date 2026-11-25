@@ -51,10 +51,11 @@ describe("toDiscountInput", () => {
     const mf = input.metafields[0];
     expect(mf).toMatchObject({ namespace: "$app", key: "rule-config", type: "json" });
     expect(JSON.parse(mf.value)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       ruleId: "rule_1",
       title: "10% off Winter",
       collectionIds: [C1],
+      includeLines: true,
       config: pct10,
     });
   });
@@ -412,5 +413,72 @@ describe("reconcile", () => {
     for (let i = 0; i < 3; i++) await t.repo.create(SHOP, { ...draft(), priority: i });
     now = new Date(NOW.getTime() + STALE_AFTER_MS + 1000);
     expect(await reconcile(t.deps, 2)).toBe(2);
+  });
+});
+
+describe("tiered spend rules", () => {
+  const tiers: RuleDraft["config"] = {
+    type: "TIERED_SPEND",
+    currencyCode: "USD",
+    tiers: [
+      { thresholdMinor: 10000, value: { kind: "PERCENTAGE", percent: 10 } },
+      { thresholdMinor: 20000, value: { kind: "PERCENTAGE", percent: 15 } },
+      { thresholdMinor: 30000, value: { kind: "PERCENTAGE", percent: 20 } },
+    ],
+  };
+
+  it("are created with discountClasses ORDER, no collections, includeLines=false", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    const res = await saveRule(t.deps, draft({ title: "Spend more", config: tiers }));
+    expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.discountClasses).toEqual(["ORDER"]);
+    const payload = JSON.parse(sent.automaticAppDiscount.metafields[0].value);
+    expect(payload).toMatchObject({ schemaVersion: 2, includeLines: false, collectionIds: [], config: tiers });
+  });
+
+  it.each([
+    [{ orderDiscounts: true, productDiscounts: true, shippingDiscounts: false }],
+    [{ orderDiscounts: false, productDiscounts: true, shippingDiscounts: true }],
+    [{ orderDiscounts: false, productDiscounts: false, shippingDiscounts: false }],
+  ])("send combinesWith exactly as chosen: %j", async (combinesWith) => {
+    const t = setup({ ZjCreateRuleDiscount: created() });
+    await saveRule(t.deps, draft({ config: tiers, combinesWith }));
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.combinesWith).toEqual(combinesWith);
+  });
+
+  it("can coexist with an amount-off rule at a different priority, each with its own class", async () => {
+    let n = 0;
+    const t = setup({ ZjCreateRuleDiscount: () => created(`gid://shopify/DiscountAutomaticNode/${++n}`)() });
+    await saveRule(t.deps, draft({ priority: 1, combinesWith: { orderDiscounts: true, productDiscounts: false, shippingDiscounts: false } }));
+    await saveRule(t.deps, draft({ priority: 2, config: tiers, combinesWith: { orderDiscounts: false, productDiscounts: true, shippingDiscounts: false } }));
+    const classes = t.calls.filter((c) => c.op === "ZjCreateRuleDiscount").map((c) => (c.variables as { automaticAppDiscount: { discountClasses: string[] } }).automaticAppDiscount.discountClasses);
+    expect(classes).toEqual([["PRODUCT"], ["ORDER"]]);
+  });
+
+  it("rejects changing a rule's type after creation (server side)", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: updated() });
+    const first = await saveRule(t.deps, draft());
+    if (!first.ok) throw new Error("setup");
+    const before = t.calls.length;
+    const res = await saveRule(t.deps, draft({ id: first.rule.id, config: tiers }));
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.errors[0]).toMatchObject({ field: "ruleType" });
+    expect(t.calls.length).toBe(before);
+    expect((await t.repo.get(SHOP, first.rule.id))?.config.type).toBe("AMOUNT_OFF_PRODUCTS");
+  });
+
+  it("editing a tiered rule keeps ORDER and updates the tiers", async () => {
+    const t = setup({ ZjCreateRuleDiscount: created(), ZjUpdateRuleDiscount: updated() });
+    const first = await saveRule(t.deps, draft({ config: tiers }));
+    if (!first.ok) throw new Error("setup");
+    const changed = { ...tiers, tiers: tiers.tiers.slice(0, 2) } as RuleDraft["config"];
+    const res = await saveRule(t.deps, draft({ id: first.rule.id, config: changed }));
+    expect(res.ok && res.rule.syncStatus).toBe("SYNCED");
+    const sent = t.calls.at(-1)!.variables as { automaticAppDiscount: ReturnType<typeof toDiscountInput> };
+    expect(sent.automaticAppDiscount.discountClasses).toEqual(["ORDER"]);
+    expect(JSON.parse(sent.automaticAppDiscount.metafields[0].value).config.tiers).toHaveLength(2);
   });
 });

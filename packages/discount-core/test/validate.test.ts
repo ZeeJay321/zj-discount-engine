@@ -113,3 +113,50 @@ describe("rangesOverlap", () => {
     [20, 30, 0, null, true],
   ])("[%d,%s) vs [%d,%s) → %s", (a, b, c, d, out) => expect(rangesOverlap(a, b, c, d)).toBe(out));
 });
+
+describe("validateRule — tiered spend", () => {
+  const P = (percent: number) => ({ kind: "PERCENTAGE" as const, percent });
+  const F = (amountMinor: number) => ({ kind: "FIXED_AMOUNT" as const, amountMinor });
+  const tieredDraft = (tiers: Array<[number, ReturnType<typeof P> | ReturnType<typeof F>]>, currencyCode = "USD") =>
+    draft({ config: { type: "TIERED_SPEND", currencyCode, tiers: tiers.map(([thresholdMinor, value]) => ({ thresholdMinor, value })) } });
+  const f = (d: RuleDraft) => validateRule(d).map((e) => e.field);
+
+  it("accepts 2–5 increasing tiers with non-decreasing values", () => {
+    expect(validateRule(tieredDraft([[10000, P(10)], [20000, P(15)], [30000, P(20)]]))).toEqual([]);
+    expect(validateRule(tieredDraft([[10000, P(10)], [20000, P(10)]]))).toEqual([]);
+    expect(validateRule(tieredDraft([[5000, F(500)], [10000, F(1500)]]))).toEqual([]);
+    expect(validateRule(tieredDraft([[1, P(1)], [2, P(2)], [3, P(3)], [4, P(4)], [5, P(100)]]))).toEqual([]);
+  });
+
+  it.each([
+    ["one tier", [[10000, P(10)]], "config.tiers"],
+    ["six tiers", [[1, P(1)], [2, P(2)], [3, P(3)], [4, P(4)], [5, P(5)], [6, P(6)]], "config.tiers"],
+    ["equal thresholds", [[10000, P(10)], [10000, P(15)]], "config.tiers.1.threshold"],
+    ["decreasing thresholds", [[20000, P(10)], [10000, P(15)]], "config.tiers.1.threshold"],
+    ["zero threshold", [[0, P(10)], [10000, P(15)]], "config.tiers.0.threshold"],
+    ["negative threshold", [[-1, P(10)], [10000, P(15)]], "config.tiers.0.threshold"],
+    ["fractional threshold", [[1.5, P(10)], [10000, P(15)]], "config.tiers.0.threshold"],
+    ["huge threshold", [[1, P(10)], [1e12, P(15)]], "config.tiers.1.threshold"],
+    ["decreasing percent", [[10000, P(15)], [20000, P(10)]], "config.tiers.1.value"],
+    ["percent above 100", [[10000, P(10)], [20000, P(101)]], "config.tiers.1.value"],
+    ["zero percent", [[10000, P(0)], [20000, P(10)]], "config.tiers.0.value"],
+    ["three-decimal percent", [[10000, P(10.125)], [20000, P(11)]], "config.tiers.0.value"],
+    ["decreasing fixed", [[5000, F(1500)], [10000, F(500)]], "config.tiers.1.value"],
+    ["zero fixed", [[5000, F(0)], [10000, F(500)]], "config.tiers.0.value"],
+    ["fixed above its threshold", [[5000, F(6000)], [10000, F(7000)]], "config.tiers.0.value"],
+    ["mixed kinds", [[5000, P(10)], [10000, F(500)]], "config.tiers.1.value"],
+  ])("rejects %s", (_n, tiers, field) => {
+    expect(f(tieredDraft(tiers as Array<[number, ReturnType<typeof P>]>))).toContain(field);
+  });
+
+  it("rejects an invalid currency, empty tiers and an unknown value kind", () => {
+    expect(f(tieredDraft([[1, P(1)], [2, P(2)]], "usd"))).toContain("config.currencyCode");
+    expect(f(draft({ config: { type: "TIERED_SPEND", currencyCode: "USD", tiers: [] } }))).toContain("config.tiers");
+    expect(f(draft({ config: { type: "TIERED_SPEND", currencyCode: "USD", tiers: [{ thresholdMinor: 1, value: { kind: "X" } }, { thresholdMinor: 2, value: { kind: "X" } }] } as unknown as RuleDraft["config"] }))).toContain("config.tiers.0.value");
+  });
+
+  it("still applies the same-priority overlap check", () => {
+    const other = { id: "o", title: "Other", enabled: true, priority: 10, startsAt: "2026-12-01T00:00:00.000Z", endsAt: null };
+    expect(validateRule(tieredDraft([[1, P(1)], [2, P(2)]]), [other]).map((e) => e.field)).toContain("priority");
+  });
+});

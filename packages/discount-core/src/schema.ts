@@ -3,19 +3,31 @@
  * reads it through its input query; `collectionIds` is top-level because the
  * extension's input variables are taken from this metafield's top-level keys.
  */
-import { discountClassFor } from "./evaluate";
-import type { AmountOffValue, DiscountClass, RuleConfig, RuleDraft } from "./types";
+import { discountClassFor, needsCartLines } from "./evaluate";
+import type { AmountOffValue, DiscountClass, RuleConfig, RuleDraft, SpendTier, TierValue } from "./types";
 
-export const RULE_CONFIG_SCHEMA_VERSION = 1;
+/**
+ * v1: amount-off-products only, no `includeLines`.
+ * v2: adds `includeLines` (input-query variable) and the TIERED_SPEND type.
+ * Readers accept both; writers always write the current version. Discounts saved
+ * with v1 keep working until they are next edited.
+ */
+export const RULE_CONFIG_SCHEMA_VERSION = 2;
+export const SUPPORTED_SCHEMA_VERSIONS: readonly number[] = [1, 2];
 export const METAFIELD_NAMESPACE = "$app";
 export const METAFIELD_KEY = "rule-config";
 
 export interface RuleMetafieldPayload {
-  schemaVersion: typeof RULE_CONFIG_SCHEMA_VERSION;
+  schemaVersion: number;
   ruleId: string;
   title: string;
   /** Input-query variable for `inAnyCollection(ids: $collectionIds)`. Always present. */
   collectionIds: string[];
+  /**
+   * Input-query variable for `lines @include(if: $includeLines)`: order rules only
+   * need the cart subtotal, so they skip line data. Absent in v1 (query default: true).
+   */
+  includeLines: boolean;
   config: RuleConfig;
 }
 
@@ -25,12 +37,13 @@ export function toMetafieldPayload(rule: { id: string; title: string; config: Ru
     ruleId: rule.id,
     title: rule.title,
     collectionIds: collectionIdsOf(rule.config),
+    includeLines: needsCartLines(rule.config),
     config: rule.config,
   };
 }
 
 export function collectionIdsOf(config: RuleConfig): string[] {
-  return config.target.kind === "COLLECTIONS" ? [...config.target.collectionIds] : [];
+  return config.type === "AMOUNT_OFF_PRODUCTS" && config.target.kind === "COLLECTIONS" ? [...config.target.collectionIds] : [];
 }
 
 export function discountClassesFor(rule: Pick<RuleDraft, "config">): DiscountClass[] {
@@ -47,19 +60,23 @@ const isStrArray = (v: unknown): v is string[] =>
 /** Strict structural parse of the metafield JSON. Values are range-checked by validateRule on save. */
 export function parseMetafieldPayload(json: unknown): ParseResult<RuleMetafieldPayload> {
   if (!isObj(json)) return { ok: false, error: "payload is not an object" };
-  if (json.schemaVersion !== RULE_CONFIG_SCHEMA_VERSION) return { ok: false, error: "unsupported schemaVersion" };
+  const version = json.schemaVersion;
+  if (typeof version !== "number" || !SUPPORTED_SCHEMA_VERSIONS.includes(version)) return { ok: false, error: "unsupported schemaVersion" };
   if (typeof json.ruleId !== "string" || typeof json.title !== "string")
     return { ok: false, error: "ruleId/title missing" };
   if (!isStrArray(json.collectionIds)) return { ok: false, error: "collectionIds missing" };
   const config = parseConfig(json.config);
   if (!config.ok) return config;
+  if (version === 1 && config.value.type !== "AMOUNT_OFF_PRODUCTS") return { ok: false, error: "rule type needs schemaVersion 2" };
+  if (version >= 2 && typeof json.includeLines !== "boolean") return { ok: false, error: "includeLines missing" };
   return {
     ok: true,
     value: {
-      schemaVersion: RULE_CONFIG_SCHEMA_VERSION,
+      schemaVersion: version,
       ruleId: json.ruleId,
       title: json.title,
       collectionIds: json.collectionIds,
+      includeLines: version === 1 ? true : (json.includeLines as boolean),
       config: config.value,
     },
   };
@@ -67,6 +84,7 @@ export function parseMetafieldPayload(json: unknown): ParseResult<RuleMetafieldP
 
 export function parseConfig(c: unknown): ParseResult<RuleConfig> {
   if (!isObj(c)) return { ok: false, error: "config is not an object" };
+  if (c.type === "TIERED_SPEND") return parseTiered(c);
   if (c.type !== "AMOUNT_OFF_PRODUCTS") return { ok: false, error: "unknown rule type" };
   const t = c.target;
   if (!isObj(t) || t.kind !== "COLLECTIONS" || !isStrArray(t.collectionIds))
@@ -106,4 +124,26 @@ function parseValue(v: unknown): ParseResult<AmountOffValue> {
     };
   }
   return { ok: false, error: "invalid value" };
+}
+
+function parseTiered(c: Record<string, unknown>): ParseResult<RuleConfig> {
+  if (typeof c.currencyCode !== "string") return { ok: false, error: "currencyCode missing" };
+  if (!Array.isArray(c.tiers) || c.tiers.length === 0) return { ok: false, error: "tiers missing" };
+  const tiers: SpendTier[] = [];
+  for (let i = 0; i < c.tiers.length; i++) {
+    const t: unknown = c.tiers[i];
+    if (!isObj(t) || typeof t.thresholdMinor !== "number" || !Number.isSafeInteger(t.thresholdMinor))
+      return { ok: false, error: "invalid tier threshold" };
+    const v = t.value;
+    let value: TierValue;
+    if (isObj(v) && v.kind === "PERCENTAGE" && typeof v.percent === "number" && Number.isFinite(v.percent)) {
+      value = { kind: "PERCENTAGE", percent: v.percent };
+    } else if (isObj(v) && v.kind === "FIXED_AMOUNT" && typeof v.amountMinor === "number" && Number.isSafeInteger(v.amountMinor)) {
+      value = { kind: "FIXED_AMOUNT", amountMinor: v.amountMinor };
+    } else {
+      return { ok: false, error: "invalid tier value" };
+    }
+    tiers.push({ thresholdMinor: t.thresholdMinor, value });
+  }
+  return { ok: true, value: { type: "TIERED_SPEND", currencyCode: c.currencyCode, tiers } };
 }
